@@ -1,11 +1,13 @@
 import { RULE_LESSONS } from './lessons.js';
 import { toolchainAdvice } from './toolchain.js';
+import { forgeFix, forgeLabel } from '../checks/forge.js';
 import type {
   Advice,
   AuditResult,
   DirectivesResult,
   LintResult,
   PrHygiene,
+  RuleCoverage,
   TestCoverage,
 } from '../types.js';
 
@@ -98,6 +100,25 @@ export const bypassAdvice = (directives: DirectivesResult): Advice | null => {
 
 const PR_HYGIENE_FLOOR = 0.2;
 
+export const ruleCoverageAdvice = (coverage: RuleCoverage): Advice | null => {
+  if (coverage.status !== 'checked') return null;
+  if (coverage.unconfigured.length === 0) return null;
+  return {
+    id: 'unconfigured-rules',
+    area: 'toolchain',
+    title: `${coverage.configured.length} of ${coverage.available.length} Legion rules are configured.`,
+    why: 'A config that names every rule by hand stops receiving them. The rules added since this config was written sit at 0, nothing reports that, and the repo quietly drifts from the standard it thinks it is holding. A preset picks up new rules on upgrade; an explicit list never does.',
+    fix: [
+      'oxlint: "jsPlugins": ["legion-toolkit/eslint-plugin"] plus the recommended preset',
+      'eslint: spread plugin.configs.recommended, then override only what differs',
+    ],
+    detail: withOverflow(
+      coverage.unconfigured.slice(0, MAX_DETAIL),
+      coverage.unconfigured.length,
+    ),
+  };
+};
+
 export const prAdvice = (hygiene: PrHygiene): Advice | null => {
   if (hygiene.status === 'skipped') return null;
   if (hygiene.ratio >= PR_HYGIENE_FLOOR) return null;
@@ -105,12 +126,9 @@ export const prAdvice = (hygiene: PrHygiene): Advice | null => {
   return {
     id: 'pr-hygiene',
     area: 'process',
-    title: `${direct} of the last ${hygiene.inspected} commits landed straight on the branch.`,
+    title: `${direct} of the last ${hygiene.inspected} commits landed straight on the branch (${forgeLabel(hygiene.forge)}).`,
     why: 'Not a problem by itself, and it does not affect the score. Section 12 only requires a PR on a client repo, where nothing reaches main without review. On your own repo it is your call, so the thing to check is that the commit messages carry what a PR description would have said, because they are then the only record.',
-    fix: [
-      'client repo: git switch -c <branch>, gh pr create --fill, never merge it yourself',
-      'own repo: nothing to change, as long as the commit message says why',
-    ],
+    fix: forgeFix(hygiene.forge),
     detail: [],
   };
 };
@@ -131,6 +149,8 @@ export const buildAdvice = (
   if (tests) entries.push(tests);
   const bypasses = bypassAdvice(result.directives);
   if (bypasses) entries.push(bypasses);
+  const coverage = ruleCoverageAdvice(result.ruleCoverage);
+  if (coverage) entries.push(coverage);
   const process = prAdvice(result.prHygiene);
   if (process) entries.push(process);
   return entries;
