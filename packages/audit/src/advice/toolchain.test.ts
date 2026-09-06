@@ -17,6 +17,7 @@ const toolchain = (overrides: Partial<Toolchain> = {}): Toolchain => ({
   pluginReferenced: true,
   workspaceRoot: '/repo',
   isWorkspacePackage: false,
+  reactCompiler: false,
   scripts: {},
   ...overrides,
 });
@@ -129,6 +130,40 @@ describe('toolchainAdvice', () => {
     );
     expect(ids(advice)).toContain('react-native-preset');
     expect(ids(advice)).toContain('no-expo-doctor');
+  });
+
+  it('nudges when the React Compiler is installed and the memo rule reports nothing', () => {
+    const advice = toolchainAdvice(
+      toolchain({ reactCompiler: true }),
+      lockfile(['yarn.lock']),
+      NO_EXPO,
+      0,
+    );
+    const nudge = advice.find(
+      (entry) => entry.id === 'react-compiler-manual-memo',
+    );
+    expect(nudge?.fix).toEqual([
+      'set reactCompiler: true in defineLegionConfig',
+    ]);
+  });
+
+  it('stays quiet when the memo rule is already reporting, which proves it is on', () => {
+    const advice = toolchainAdvice(
+      toolchain({ reactCompiler: true }),
+      lockfile(['yarn.lock']),
+      NO_EXPO,
+      140,
+    );
+    expect(ids(advice)).not.toContain('react-compiler-manual-memo');
+  });
+
+  it('says nothing about the compiler when it is not installed', () => {
+    const advice = toolchainAdvice(
+      toolchain(),
+      lockfile(['yarn.lock']),
+      NO_EXPO,
+    );
+    expect(ids(advice)).not.toContain('react-compiler-manual-memo');
   });
 
   it('reports expo patch drift as advice and not as a failure', () => {

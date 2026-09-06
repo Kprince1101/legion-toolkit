@@ -186,6 +186,24 @@ const patchDrift = (expo: ExpoDoctorResult): Advice | null => {
   };
 };
 
+const compilerWithoutRule = (
+  toolchain: Toolchain,
+  memoFindings: number,
+): Advice | null => {
+  if (!toolchain.reactCompiler) return null;
+  if (memoFindings > 0) return null;
+  return {
+    id: 'react-compiler-manual-memo',
+    area: 'toolchain',
+    title: 'The React Compiler is installed. Check `no-manual-memo` is on.',
+    why: 'The compiler memoizes for you, so every hand-written useMemo and useCallback becomes a dependency array to keep correct for no benefit, and a stale dep array is a real bug where no dep array cannot be. This audit cannot see your rule levels, only that the compiler is here and the rule is reporting nothing.',
+    fix: ['set reactCompiler: true in defineLegionConfig'],
+    detail: [
+      'If the rule is already on and your components hold no manual memoization, nothing to do.',
+    ],
+  };
+};
+
 const addPrettier = (toolchain: Toolchain): Advice | null => {
   if (toolchain.hasPrettierConfig) return null;
   return {
@@ -217,6 +235,7 @@ export const toolchainAdvice = (
   toolchain: Toolchain,
   lockfile: LockfileResult,
   expo: ExpoDoctorResult,
+  memoFindings = 0,
 ): Advice[] => {
   const candidates = [
     mixedLockfiles(lockfile),
@@ -227,6 +246,7 @@ export const toolchainAdvice = (
     nativePreset(toolchain),
     installDoctor(toolchain, expo),
     patchDrift(expo),
+    compilerWithoutRule(toolchain, memoFindings),
     adoptOxlint(toolchain),
     addPrettier(toolchain),
     addTsconfig(toolchain),

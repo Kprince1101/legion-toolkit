@@ -1,6 +1,12 @@
 import { defineLegionConfig } from './define.js';
-import { reactNative, reactNativeInput, recommendedInput } from './presets.js';
 import {
+  reactNative,
+  reactNativeInput,
+  recommended,
+  recommendedInput,
+} from './presets.js';
+import {
+  NATIVE_ONLY_RULES,
   REACT_NATIVE_ANY_BOUNDARIES,
   REACT_NATIVE_BROWSER_PATHS,
   WEB_ONLY_RULES,
@@ -11,9 +17,16 @@ import { runRule } from '../test-utils.js';
 describe('reactNative', () => {
   it('turns off the rules that can only fire on a server-rendered web app', () => {
     for (const name of WEB_ONLY_RULES) {
-      expect(recommendedInput.rules?.[name]).toBe(2);
+      expect(recommendedInput.rules?.[name]).toBeGreaterThan(0);
       expect(reactNative.levels[name]).toBe(0);
       expect(reactNative.oxlint.rules[`legion/${name}`]).toBe('off');
+    }
+  });
+
+  it('turns the native-only rules on, and only here', () => {
+    for (const name of NATIVE_ONLY_RULES) {
+      expect(reactNative.levels[name]).toBeGreaterThan(0);
+      expect(recommended.levels[name]).toBe(0);
     }
   });
 

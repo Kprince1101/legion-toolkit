@@ -1,5 +1,5 @@
-import { defineLegionConfig } from './define.js';
-import { recommended, strict } from './presets.js';
+import { defineLegionConfig, NATIVE_ONLY_RULES } from './define.js';
+import { INTRODUCED_AT_WARN, recommended, strict } from './presets.js';
 import { RULE_NAMES } from '../rules/index.js';
 
 describe('defineLegionConfig', () => {
@@ -49,7 +49,10 @@ describe('defineLegionConfig', () => {
     });
     expect(config.oxlint.overrides[1]).toEqual({
       files: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**'],
-      rules: { 'max-lines': 'off' },
+      rules: {
+        'max-lines': 'off',
+        'legion/no-hardcoded-hex': 'off',
+      },
     });
   });
 
@@ -130,18 +133,39 @@ describe('reactCompiler', () => {
 });
 
 describe('presets', () => {
-  it('recommended runs every rule at 2 except no-disables', () => {
+  const settled = (name: string): boolean => {
+    if (name === 'no-disables' || name === 'no-manual-memo') return false;
+    if ((NATIVE_ONLY_RULES as string[]).includes(name)) return false;
+    return !(INTRODUCED_AT_WARN as string[]).includes(name);
+  };
+
+  it('recommended errors on every settled rule', () => {
     for (const name of RULE_NAMES) {
-      if (name === 'no-disables' || name === 'no-manual-memo') continue;
+      if (!settled(name)) continue;
       expect(recommended.levels[name]).toBe(2);
     }
     expect(recommended.levels['no-disables']).toBe(0);
     expect(recommended.locked).toEqual(['max-lines']);
   });
 
+  it('introduces a new rule at warn in recommended, so it cannot break an existing build', () => {
+    for (const name of INTRODUCED_AT_WARN) {
+      if ((NATIVE_ONLY_RULES as string[]).includes(name)) continue;
+      expect(recommended.levels[name]).toBe(1);
+    }
+  });
+
+  it('keeps native-only rules off unless the config is react native', () => {
+    for (const name of NATIVE_ONLY_RULES) {
+      expect(recommended.levels[name]).toBe(0);
+      expect(strict.levels[name]).toBe(0);
+    }
+  });
+
   it('strict locks every rule and warns on every bypass', () => {
     for (const name of RULE_NAMES) {
       if (name === 'no-disables' || name === 'no-manual-memo') continue;
+      if ((NATIVE_ONLY_RULES as string[]).includes(name)) continue;
       expect(strict.levels[name]).toBe(3);
     }
     expect(strict.levels['no-disables']).toBe(1);

@@ -68,6 +68,17 @@ export const REACT_NATIVE_ANY_BOUNDARIES = [
 export const WEB_ONLY_RULES: LegionRuleName[] = [
   'no-use-client-in-page',
   'no-client-globals-in-state-init',
+  'button-has-type',
+  'no-target-blank-without-rel',
+  'anchor-is-not-a-button',
+  'img-has-alt',
+  'no-dangerous-html',
+];
+
+export const NATIVE_ONLY_RULES: LegionRuleName[] = [
+  'no-rn-button',
+  'touchable-has-accessibility-label',
+  'controlled-text-input',
 ];
 
 export const REACT_NATIVE_BROWSER_PATHS = ['/'];
@@ -82,6 +93,8 @@ export const DEFAULT_TEST_FILES = [
 
 export const COMPONENT_LINE_CAP = 180;
 
+export const TEST_EXEMPT_RULES: LegionRuleName[] = ['no-hardcoded-hex'];
+
 const PLUGIN_PACKAGE = 'eslint-plugin-legion';
 
 const TERNARY_RULES_OXLINT = [
@@ -93,6 +106,8 @@ const TERNARY_RULES_OXLINT = [
 const TERNARY_RULES_ESLINT = ['no-ternary', 'no-unneeded-ternary'];
 
 const highestLevel = (input: LegionConfigInput): Level => {
+  const explicit = input.rules?.['no-manual-memo'];
+  if (explicit !== undefined && explicit > 0) return explicit;
   const levels = Object.values(input.rules ?? {}) as Level[];
   if (levels.length === 0) return 3;
   return Math.max(...levels) as Level;
@@ -105,15 +120,14 @@ const resolveLevels = (
   for (const name of RULE_NAMES) {
     resolved[name] = input.rules?.[name] ?? 0;
   }
-  if (
-    input.reactCompiler === true &&
-    input.rules?.['no-manual-memo'] === undefined
-  ) {
+  if (input.reactCompiler === true) {
     resolved['no-manual-memo'] = highestLevel(input);
   }
   if (input.reactNative === true) {
     for (const name of WEB_ONLY_RULES) resolved[name] = 0;
+    return resolved;
   }
+  for (const name of NATIVE_ONLY_RULES) resolved[name] = 0;
   return resolved;
 };
 
@@ -158,6 +172,13 @@ const maxLinesEntry = (cap: number): RuleEntry => [
   { max: cap, skipBlankLines: true, skipComments: true },
 ];
 
+const testFileRules = (withCap: boolean): Record<string, RuleEntry> => {
+  const rules: Record<string, RuleEntry> = {};
+  if (withCap) rules['max-lines'] = 'off';
+  for (const name of TEST_EXEMPT_RULES) rules[`legion/${name}`] = 'off';
+  return rules;
+};
+
 export const defineLegionConfig = (input: LegionConfigInput): LegionConfig => {
   const ruleLevels = resolveLevels(input);
   const noTernary = input.noTernary ?? 0;
@@ -199,7 +220,7 @@ export const defineLegionConfig = (input: LegionConfigInput): LegionConfig => {
       files: componentFiles,
       rules: { 'max-lines': maxLinesEntry(cap) },
     });
-    oxlintOverrides.push({ files: testFiles, rules: { 'max-lines': 'off' } });
+    oxlintOverrides.push({ files: testFiles, rules: testFileRules(true) });
   }
   oxlintOverrides.push({
     files: anyBoundaries,
@@ -232,7 +253,7 @@ export const defineLegionConfig = (input: LegionConfigInput): LegionConfig => {
       configs.push({
         name: 'legion/test-files',
         files: testFiles,
-        rules: { 'max-lines': 'off' },
+        rules: testFileRules(true),
       });
     }
     if (extras?.typescriptEslint) {

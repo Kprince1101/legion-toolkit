@@ -23,6 +23,13 @@
           "presentational-components",
           "no-literal-conditions-in-jsx",
           "no-admin-client-in-browser",
+          "button-has-type",
+          "no-target-blank-without-rel",
+          "anchor-is-not-a-button",
+          "img-has-alt",
+          "no-dangerous-html",
+          "no-array-index-key",
+          "no-hardcoded-hex",
           "no-ternary",
           "no-unneeded-ternary",
           "unicorn/prefer-logical-operator-over-ternary",
@@ -50,6 +57,16 @@
       {}
     ],
     "legion/no-manual-memo": "off",
+    "legion/button-has-type": "error",
+    "legion/no-target-blank-without-rel": "error",
+    "legion/anchor-is-not-a-button": "error",
+    "legion/img-has-alt": "error",
+    "legion/no-dangerous-html": "error",
+    "legion/no-array-index-key": "error",
+    "legion/no-hardcoded-hex": "error",
+    "legion/no-rn-button": "off",
+    "legion/touchable-has-accessibility-label": "off",
+    "legion/controlled-text-input": "off",
     "no-ternary": "error",
     "no-unneeded-ternary": [
       "error",
@@ -83,7 +100,8 @@
         "**/__tests__/**"
       ],
       "rules": {
-        "max-lines": "off"
+        "max-lines": "off",
+        "legion/no-hardcoded-hex": "off"
       }
     },
     {

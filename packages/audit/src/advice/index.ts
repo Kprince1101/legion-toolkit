@@ -10,6 +10,13 @@ import type {
 } from '../types.js';
 
 const MAX_DETAIL = 6;
+
+const MEMO_RULES = new Set(['legion/no-manual-memo']);
+
+const manualMemoCount = (lint: LintResult): number =>
+  lint.rules
+    .filter((rule) => MEMO_RULES.has(rule.rule))
+    .reduce((total, rule) => total + rule.errors + rule.warnings, 0);
 const TOP_RULES = 3;
 
 const withOverflow = (lines: string[], total: number): string[] => {
@@ -112,7 +119,12 @@ export const buildAdvice = (
   result: Omit<AuditResult, 'schema' | 'generatedAt' | 'score' | 'advice'>,
 ): Advice[] => {
   const entries: Advice[] = [
-    ...toolchainAdvice(result.toolchain, result.lockfile, result.expo),
+    ...toolchainAdvice(
+      result.toolchain,
+      result.lockfile,
+      result.expo,
+      manualMemoCount(result.lint),
+    ),
     ...topRuleAdvice(result.lint),
   ];
   const tests = testAdvice(result.testCoverage);

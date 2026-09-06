@@ -118,6 +118,7 @@ export interface Toolchain {
   pluginReferenced: boolean;
   workspaceRoot: string;
   isWorkspacePackage: boolean;
+  reactCompiler: boolean;
   scripts: Record<string, string>;
 }
 
