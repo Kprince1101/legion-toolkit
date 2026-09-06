@@ -1,0 +1,117 @@
+{
+  "jsPlugins": [
+    "eslint-plugin-legion"
+  ],
+  "rules": {
+    "legion/no-narrative-comments": [
+      "error",
+      {}
+    ],
+    "legion/scoped-disables": [
+      "error",
+      {
+        "locked": [
+          "no-narrative-comments",
+          "scoped-disables",
+          "no-react-fc",
+          "no-enum",
+          "no-function-keyword",
+          "no-client-globals-in-state-init",
+          "no-use-client-in-page",
+          "guarded-context-hook",
+          "presentational-components",
+          "no-literal-conditions-in-jsx",
+          "no-admin-client-in-browser",
+          "button-has-type",
+          "no-target-blank-without-rel",
+          "anchor-is-not-a-button",
+          "img-has-alt",
+          "no-dangerous-html",
+          "no-array-index-key",
+          "no-hardcoded-hex",
+          "no-ternary",
+          "no-unneeded-ternary",
+          "unicorn/prefer-logical-operator-over-ternary",
+          "no-explicit-any",
+          "max-lines"
+        ]
+      }
+    ],
+    "legion/no-disables": "warn",
+    "legion/no-react-fc": "error",
+    "legion/no-enum": "error",
+    "legion/no-function-keyword": "error",
+    "legion/no-client-globals-in-state-init": "error",
+    "legion/no-use-client-in-page": "error",
+    "legion/guarded-context-hook": "error",
+    "legion/presentational-components": [
+      "error",
+      {
+        "reactCompiler": false
+      }
+    ],
+    "legion/no-literal-conditions-in-jsx": "error",
+    "legion/no-admin-client-in-browser": [
+      "error",
+      {}
+    ],
+    "legion/no-manual-memo": "off",
+    "legion/button-has-type": "error",
+    "legion/no-target-blank-without-rel": "error",
+    "legion/anchor-is-not-a-button": "error",
+    "legion/img-has-alt": "error",
+    "legion/no-dangerous-html": "error",
+    "legion/no-array-index-key": "error",
+    "legion/no-hardcoded-hex": "error",
+    "legion/no-rn-button": "off",
+    "legion/touchable-has-accessibility-label": "off",
+    "legion/controlled-text-input": "off",
+    "no-ternary": "error",
+    "no-unneeded-ternary": [
+      "error",
+      {
+        "defaultAssignment": false
+      }
+    ],
+    "unicorn/prefer-logical-operator-over-ternary": "error",
+    "typescript/no-explicit-any": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.tsx"
+      ],
+      "rules": {
+        "max-lines": [
+          "error",
+          {
+            "max": 180,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**"
+      ],
+      "rules": {
+        "max-lines": "off",
+        "legion/no-hardcoded-hex": "off"
+      }
+    },
+    {
+      "files": [
+        "lib/supabase/**",
+        "**/*.d.ts",
+        "types/db.ts"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ]
+}

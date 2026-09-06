@@ -24,7 +24,8 @@
     "audit:self": "yarn legion-audit --ignore fixtures --no-deps-audit --md AUDIT.md --json audit.json",
     "changeset": "changeset",
     "version": "changeset version",
-    "validate": "yarn build && yarn typecheck && yarn check:oxlintrc && yarn lint && yarn format:check && yarn check:umbrella && yarn check:metadata && yarn test:ci"
+    "validate": "yarn build && yarn typecheck && yarn check:oxlintrc && yarn lint && yarn format:check && yarn check:umbrella && yarn check:metadata && yarn test:ci",
+    "generate:presets": "node scripts/generate-presets.ts"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.2",
@@ -38,6 +39,7 @@
     "eslint": "10.10.0",
     "jest": "30.5.1",
     "legion-audit": "workspace:*",
+    "legion-init": "workspace:*",
     "legion-rules": "workspace:*",
     "oxlint": "1.81.0",
     "prettier": "3.9.6",
