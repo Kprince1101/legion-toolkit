@@ -34,5 +34,7 @@ jobs:
           publish-script: node scripts/publish.ts
           commit-message: 'Version packages'
           pr-title: 'Version packages'
+          push-with-git-cli: true
         env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
