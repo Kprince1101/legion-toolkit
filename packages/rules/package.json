@@ -1,6 +1,6 @@
 {
   "name": "legion-rules",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The LEGION-STANDARDS rule engine: ESLint-format rules that run under oxlint and ESLint, plus tolerance-level config presets.",
   "license": "MIT",
   "author": "Veracium LLC",

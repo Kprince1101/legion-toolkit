@@ -1,6 +1,6 @@
 {
   "name": "legion-toolkit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "One install for the whole Legion toolkit: the lint plugin, the audit CLI, the Prettier config and the TypeScript configs, each exposed as a subpath.",
   "license": "MIT",
   "author": "Veracium LLC",
