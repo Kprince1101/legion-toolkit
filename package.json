@@ -32,7 +32,7 @@
     "@swc/jest": "0.2.39",
     "@types/eslint": "9.6.1",
     "@types/jest": "30.0.0",
-    "@types/node": "^26.4.1",
+    "@types/node": "^22.19.0",
     "@typescript-eslint/parser": "8.69.0",
     "@typescript-eslint/types": "8.69.0",
     "eslint": "10.10.0",
@@ -41,7 +41,7 @@
     "legion-rules": "workspace:*",
     "oxlint": "1.81.0",
     "prettier": "3.9.6",
-    "typescript": "7.0.2"
+    "typescript": "6.0.3"
   },
   "engines": {
     "node": ">=22"
