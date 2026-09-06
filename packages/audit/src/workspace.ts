@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import type { WorkspaceContext } from './types.js';
 
 const LOCKFILE_NAMES = [
   'yarn.lock',
@@ -11,12 +12,6 @@ const LOCKFILE_NAMES = [
 ];
 
 const MAX_DEPTH = 8;
-
-export interface WorkspaceContext {
-  root: string;
-  workspaceRoot: string;
-  isPackage: boolean;
-}
 
 const hasLockfile = (dir: string): boolean =>
   LOCKFILE_NAMES.some((name) => existsSync(join(dir, name)));
