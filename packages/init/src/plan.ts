@@ -48,7 +48,8 @@ const lintConfigAction = (
     return {
       kind: 'merge',
       path: '.oxlintrc.json',
-      reason: `add "extends": ["${presetPath(preset)}"] to the existing config`,
+      reason: `add "extends": ["${presetPath(preset)}"], keeping every other key`,
+      extendsPath: presetPath(preset),
     };
   }
   const candidates = [
@@ -75,9 +76,9 @@ const lintConfigAction = (
     };
   }
   return {
-    kind: 'merge',
+    kind: 'manual',
     path: found,
-    reason: `spread ...legion.configs.${preset} into the existing config`,
+    reason: `add: import legion from 'legion-toolkit/eslint-plugin'; then spread ...legion.configs.${preset}`,
   };
 };
 

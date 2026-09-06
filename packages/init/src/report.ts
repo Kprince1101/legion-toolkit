@@ -3,6 +3,7 @@ import type { InitPlan, PlannedAction } from './types.js';
 const ICONS: Record<PlannedAction['kind'], string> = {
   create: 'create',
   merge: 'merge ',
+  manual: 'manual',
   skip: 'skip  ',
 };
 
@@ -30,7 +31,13 @@ export const renderPlan = (plan: InitPlan): string => {
   if (merges.length > 0) {
     lines.push(
       '',
-      'Files marked merge are edited in place; nothing is ever overwritten.',
+      'merge  edits the file in place, adding only what is missing. Nothing is overwritten.',
+    );
+  }
+  const manual = plan.actions.filter((action) => action.kind === 'manual');
+  if (manual.length > 0) {
+    lines.push(
+      'manual is yours to apply. init does not rewrite a JavaScript config it did not write.',
     );
   }
   lines.push('', 'INSTALL', ...plan.install.map((line) => `  ${line}`), '');

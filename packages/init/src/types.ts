@@ -17,13 +17,14 @@ export interface InitDetection {
   scripts: Record<string, string>;
 }
 
-export type ActionKind = 'create' | 'merge' | 'skip';
+export type ActionKind = 'create' | 'merge' | 'manual' | 'skip';
 
 export interface PlannedAction {
   kind: ActionKind;
   path: string;
   reason: string;
   contents?: string;
+  extendsPath?: string;
 }
 
 export interface InitPlan {

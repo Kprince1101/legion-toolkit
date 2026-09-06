@@ -30,6 +30,10 @@ The framework picks the preset: an Expo or React Native repo gets
 Nothing is overwritten. An existing `lint` script you wrote yourself survives
 untouched; `init` only fills in what is not there.
 
+It is also all-or-nothing. Every file `init` intends to edit is parsed before
+anything is written, so a malformed `package.json` or lint config stops the
+run with nothing written rather than leaving the repo half configured.
+
 ## The generated lint config extends, it does not enumerate
 
 ```jsonc

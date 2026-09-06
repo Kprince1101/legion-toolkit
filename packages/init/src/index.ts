@@ -1,6 +1,11 @@
 export { detect, detectAgents, presetFor, linterFor } from './detect.js';
 export { buildPlan, missingScripts } from './plan.js';
-export { applyPlan, applyManifest } from './apply.js';
+export {
+  applyPlan,
+  applyManifest,
+  preflight,
+  UnreadableManifestError,
+} from './apply.js';
 export { renderPlan } from './report.js';
 export {
   oxlintConfig,

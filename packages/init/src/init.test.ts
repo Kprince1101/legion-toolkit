@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { applyPlan } from './apply.js';
@@ -201,7 +207,100 @@ describe('renderPlan', () => {
     );
     expect(output).toContain('DETECTED');
     expect(output).toContain('Claude Code');
-    expect(output).toContain('nothing is ever overwritten');
+    expect(output).toContain('Nothing is overwritten');
     expect(output).toContain('yarn add -D');
+  });
+});
+
+describe('a package.json that cannot be parsed', () => {
+  it('refuses to write rather than replacing it with a stub', () => {
+    const root = repo({ 'package.json': '{ this is not json' });
+    const plan = buildPlan(detection({ root }), 'recommended');
+    expect(() => applyPlan(plan)).toThrow(/nothing was written/);
+    expect(readFileSync(join(root, 'package.json'), 'utf8')).toBe(
+      '{ this is not json',
+    );
+  });
+
+  it('writes no other file either, so a failure leaves nothing half done', () => {
+    const root = repo({ 'package.json': '{ this is not json' });
+    const plan = buildPlan(detection({ root }), 'recommended');
+    expect(() => applyPlan(plan)).toThrow();
+    expect(existsSync(join(root, 'tsconfig.json'))).toBe(false);
+    expect(existsSync(join(root, '.oxlintrc.json'))).toBe(false);
+  });
+
+  it('refuses on an unparseable lint config too', () => {
+    const root = repo({
+      'package.json': '{"name":"app"}',
+      '.oxlintrc.json': '{ nope',
+    });
+    const plan = buildPlan(detection({ root }), 'recommended');
+    expect(() => applyPlan(plan)).toThrow(/\.oxlintrc\.json/);
+    expect(existsSync(join(root, 'tsconfig.json'))).toBe(false);
+  });
+
+  it('treats a missing package.json as empty rather than an error', () => {
+    const root = repo({ 'tsconfig.json': '{}' });
+    const plan = buildPlan(
+      detection({ root, hasTsconfig: true }),
+      'recommended',
+    );
+    expect(() => applyPlan(plan)).not.toThrow();
+  });
+});
+
+describe('merging into an existing oxlint config', () => {
+  it('adds the extends and keeps every other key', () => {
+    const root = repo({
+      'package.json': '{"name":"app"}',
+      '.oxlintrc.json': JSON.stringify({
+        rules: { 'no-debugger': 'error' },
+        ignorePatterns: ['vendor/**'],
+      }),
+    });
+    const plan = buildPlan(detection({ root }), 'recommended');
+    const action = plan.actions.find((a) => a.path === '.oxlintrc.json');
+    expect(action?.kind).toBe('merge');
+    applyPlan(plan);
+    const written = JSON.parse(
+      readFileSync(join(root, '.oxlintrc.json'), 'utf8'),
+    );
+    expect(written.extends).toEqual([presetPath('recommended')]);
+    expect(written.rules).toEqual({ 'no-debugger': 'error' });
+    expect(written.ignorePatterns).toEqual(['vendor/**']);
+  });
+
+  it('is idempotent, so a second run adds nothing', () => {
+    const root = repo({
+      'package.json': '{"name":"app"}',
+      '.oxlintrc.json': JSON.stringify({ rules: {} }),
+    });
+    applyPlan(buildPlan(detection({ root }), 'recommended'));
+    const first = readFileSync(join(root, '.oxlintrc.json'), 'utf8');
+    applyPlan(buildPlan(detection({ root }), 'recommended'));
+    expect(readFileSync(join(root, '.oxlintrc.json'), 'utf8')).toBe(first);
+  });
+});
+
+describe('an existing JavaScript eslint config', () => {
+  it('is reported as manual rather than claimed as an edit', () => {
+    const root = repo({
+      'package.json': '{"name":"app"}',
+      'eslint.config.mjs': 'export default [];',
+    });
+    const plan = buildPlan(
+      detection({ root, linter: 'eslint', hasEslintConfig: true }),
+      'recommended',
+    );
+    const action = plan.actions.find((a) => a.path === 'eslint.config.mjs');
+    expect(action?.kind).toBe('manual');
+    applyPlan(plan);
+    expect(readFileSync(join(root, 'eslint.config.mjs'), 'utf8')).toBe(
+      'export default [];',
+    );
+    const output = renderPlan(plan);
+    expect(output).toContain('manual is yours to apply');
+    expect(output).not.toContain('Files marked merge are edited in place');
   });
 });

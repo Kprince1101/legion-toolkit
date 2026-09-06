@@ -100,12 +100,23 @@ const run = (options: InitOptions): number => {
     );
     return 0;
   }
-  const written = applyPlan(plan);
+  let written: string[];
+  try {
+    written = applyPlan(plan);
+  } catch (error) {
+    console.error(`legion-toolkit init: ${getErrorMessage(error)}`);
+    console.error('Nothing was written.');
+    return 1;
+  }
   if (written.length === 0) {
     console.log('Nothing to write; this repo is already wired.\n');
     return 0;
   }
-  console.log(`Wrote ${written.join(', ')}.`);
+  const manual = plan.actions.filter((action) => action.kind === 'manual');
+  console.log(`Wrote ${[...new Set(written)].join(', ')}.`);
+  for (const action of manual) {
+    console.log(`Still yours to do in ${action.path}: ${action.reason}`);
+  }
   console.log(`Next: ${plan.install.join(' && ')}\n`);
   return 0;
 };
