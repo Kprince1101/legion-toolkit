@@ -34,6 +34,8 @@ the component it replaced. `findRegressions` compares the same share for the
 same reason.
 
 Test coverage is now measured rather than guessed. The audit reads
-`coverage/coverage-summary.json` when it exists, falls back to what the test
-files actually import and `describe`, and only then to matching base names.
-A single test file covering many components now counts for all of them.
+`coverage/coverage-summary.json` when it exists, then Istanbul's
+`coverage-final.json` (which is what Jest's default reporters write, so it is
+the more common of the two), then falls back to what the test files actually
+import and `describe`, and only then to matching base names. A single test
+file covering many components now counts for all of them.

@@ -80,6 +80,7 @@ const runAdvice = (args: CliArgs): number => {
     depsAudit: false,
     runTests: false,
     runFormat: false,
+    runTypecheck: false,
   });
   console.log(renderConsole(result));
   return 0;

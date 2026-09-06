@@ -44,6 +44,14 @@ describe('coveredNames', () => {
     expect(coveredNames("import React from 'react';")).toEqual([]);
   });
 
+  it('does not treat an it() or test() title as a coverage signal', () => {
+    const source = [
+      "it('renders correctly', () => {});",
+      "test('Button handles a click', () => {});",
+    ].join('\n');
+    expect(coveredNames(source)).toEqual([]);
+  });
+
   it('reads the subject out of a describe title', () => {
     expect(
       coveredNames("describe('useMenuPanel returns sections', () => {})"),

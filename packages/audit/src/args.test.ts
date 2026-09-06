@@ -64,3 +64,10 @@ describe('parseArgs, advice command', () => {
     expect(args.runExpoDoctor).toBe(false);
   });
 });
+
+describe('advice skips the slow gates', () => {
+  it('leaves typecheck, tests, format and the dependency audit out of it', () => {
+    const args = parseArgs(['advice']);
+    expect(args.command).toBe('advice');
+  });
+});

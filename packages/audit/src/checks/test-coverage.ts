@@ -56,7 +56,7 @@ const isHookFile = (file: string): boolean => {
 };
 
 const IMPORT_PATTERN = /(?:from|require\()\s*['"]([^'"]+)['"]/g;
-const DESCRIBE_PATTERN = /\b(?:describe|it|test)\s*\(\s*['"`]([^'"`]+)/g;
+const DESCRIBE_PATTERN = /\bdescribe\s*\(\s*['"`]([^'"`]+)/g;
 const IDENTIFIER_HEAD = /^[A-Za-z][A-Za-z0-9_]*/;
 
 export const coveredNames = (source: string): string[] => {
