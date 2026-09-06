@@ -186,6 +186,28 @@ const patchDrift = (expo: ExpoDoctorResult): Advice | null => {
   };
 };
 
+const compilerWithoutRule = (
+  toolchain: Toolchain,
+  memoFindings: number,
+): Advice | null => {
+  if (!toolchain.reactCompiler) return null;
+  return {
+    id: 'react-compiler-manual-memo',
+    area: 'toolchain',
+    title: 'The React Compiler is installed, but no-manual-memo is off.',
+    why: 'The compiler memoizes for you, so every hand-written useMemo and useCallback is now a dependency array to keep correct for no benefit. A stale dep array is a real bug; no dep array cannot be one.',
+    fix: ['set reactCompiler: true in defineLegionConfig'],
+    detail: memoCountDetail(memoFindings),
+  };
+};
+
+const memoCountDetail = (count: number): string[] => {
+  if (count === 0) return [];
+  return [
+    `${count} useMemo/useCallback call(s) in this repo would be flagged.`,
+  ];
+};
+
 const addPrettier = (toolchain: Toolchain): Advice | null => {
   if (toolchain.hasPrettierConfig) return null;
   return {
@@ -217,6 +239,7 @@ export const toolchainAdvice = (
   toolchain: Toolchain,
   lockfile: LockfileResult,
   expo: ExpoDoctorResult,
+  memoFindings = 0,
 ): Advice[] => {
   const candidates = [
     mixedLockfiles(lockfile),
@@ -227,6 +250,7 @@ export const toolchainAdvice = (
     nativePreset(toolchain),
     installDoctor(toolchain, expo),
     patchDrift(expo),
+    compilerWithoutRule(toolchain, memoFindings),
     adoptOxlint(toolchain),
     addPrettier(toolchain),
     addTsconfig(toolchain),

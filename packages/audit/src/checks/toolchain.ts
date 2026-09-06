@@ -134,6 +134,25 @@ const isToolkitInstalled = (root: string): boolean => {
 const hasWorkspaces = (root: string): boolean =>
   readPackageJson(root).workspaces !== undefined;
 
+const COMPILER_PACKAGES = [
+  'babel-plugin-react-compiler',
+  'eslint-plugin-react-compiler',
+  'react-compiler-runtime',
+];
+
+const NEXT_CONFIGS = ['next.config.js', 'next.config.mjs', 'next.config.ts'];
+
+export const detectReactCompiler = (root: string): boolean => {
+  const pkg = readPackageJson(root);
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  if (COMPILER_PACKAGES.some((name) => deps[name] !== undefined)) return true;
+  return NEXT_CONFIGS.some((name) => {
+    const path = join(root, name);
+    if (!existsSync(path)) return false;
+    return /reactCompiler\s*:\s*true/.test(readFile(path));
+  });
+};
+
 export const detectToolchain = (
   root: string,
   manager: PackageManager,
@@ -161,6 +180,8 @@ export const detectToolchain = (
       referencesPlugin(root) || referencesPlugin(workspace.workspaceRoot),
     workspaceRoot: workspace.workspaceRoot,
     isWorkspacePackage: workspace.isPackage,
+    reactCompiler:
+      detectReactCompiler(root) || detectReactCompiler(workspace.workspaceRoot),
     scripts: pkg.scripts ?? {},
   };
 };

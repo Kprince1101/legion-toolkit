@@ -1,5 +1,19 @@
 import { defineLegionConfig } from './define.js';
 import type { LegionConfig, LegionConfigInput } from './define.js';
+import type { LegionRuleName } from '../rules/index.js';
+
+export const INTRODUCED_AT_WARN: LegionRuleName[] = [
+  'button-has-type',
+  'no-target-blank-without-rel',
+  'anchor-is-not-a-button',
+  'img-has-alt',
+  'no-dangerous-html',
+  'no-array-index-key',
+  'no-hardcoded-hex',
+  'no-rn-button',
+  'touchable-has-accessibility-label',
+  'controlled-text-input',
+];
 
 export const recommendedInput: LegionConfigInput = {
   rules: {
@@ -16,6 +30,16 @@ export const recommendedInput: LegionConfigInput = {
     'no-literal-conditions-in-jsx': 2,
     'no-admin-client-in-browser': 2,
     'no-manual-memo': 0,
+    'button-has-type': 1,
+    'no-target-blank-without-rel': 1,
+    'anchor-is-not-a-button': 1,
+    'img-has-alt': 1,
+    'no-dangerous-html': 1,
+    'no-array-index-key': 1,
+    'no-hardcoded-hex': 1,
+    'no-rn-button': 1,
+    'touchable-has-accessibility-label': 1,
+    'controlled-text-input': 1,
   },
   noTernary: 2,
   noExplicitAny: 2,
@@ -36,6 +60,16 @@ export const strictInput: LegionConfigInput = {
     'no-literal-conditions-in-jsx': 3,
     'no-admin-client-in-browser': 3,
     'no-manual-memo': 0,
+    'button-has-type': 3,
+    'no-target-blank-without-rel': 3,
+    'anchor-is-not-a-button': 3,
+    'img-has-alt': 3,
+    'no-dangerous-html': 3,
+    'no-array-index-key': 3,
+    'no-hardcoded-hex': 3,
+    'no-rn-button': 3,
+    'touchable-has-accessibility-label': 3,
+    'controlled-text-input': 3,
   },
   noTernary: 3,
   noExplicitAny: 3,

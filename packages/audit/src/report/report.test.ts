@@ -60,6 +60,7 @@ const base = (): AuditResult => ({
     pluginReferenced: true,
     workspaceRoot: '/repo',
     isWorkspacePackage: false,
+    reactCompiler: false,
     scripts: {},
   },
   expo: {

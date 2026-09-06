@@ -9,6 +9,8 @@ export {
   REACT_NATIVE_ANY_BOUNDARIES,
   REACT_NATIVE_BROWSER_PATHS,
   WEB_ONLY_RULES,
+  NATIVE_ONLY_RULES,
+  TEST_EXEMPT_RULES,
 } from './config/define.js';
 export type {
   LegionConfig,
@@ -25,6 +27,7 @@ export {
   recommendedInput,
   strictInput,
   reactNativeInput,
+  INTRODUCED_AT_WARN,
 } from './config/presets.js';
 export { levelToSeverity, isLevel, isLocked, LEVELS } from './config/levels.js';
 export type { RuleEntry } from './config/levels.js';
@@ -38,5 +41,7 @@ export type { NoNarrativeCommentsOptions } from './rules/no-narrative-comments.j
 export type { ScopedDisablesOptions } from './rules/scoped-disables.js';
 export type { PresentationalComponentsOptions } from './rules/presentational-components.js';
 export type { NoAdminClientInBrowserOptions } from './rules/no-admin-client-in-browser.js';
+export type { NoHardcodedHexOptions } from './rules/no-hardcoded-hex.js';
+export type { TouchableOptions } from './rules/touchable-has-accessibility-label.js';
 export { isAppRouteFile } from './rules/no-use-client-in-page.js';
 export type { Level, Severity, LegionRuleModule } from './types.js';
