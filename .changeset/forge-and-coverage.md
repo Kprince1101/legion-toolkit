@@ -18,8 +18,8 @@ guessing is what caused this.
 
 New `ruleCoverage` check. A config that enumerates rules by hand stops
 receiving them: the rules added since it was written sit at 0 and nothing
-says so. The audit now reads the rule list from the plugin *the consumer has
-installed*, compares it against what their oxlint config names or what
+says so. The audit now reads the rule list from the plugin _the consumer has
+installed_, compares it against what their oxlint config names or what
 `eslint --print-config` resolves, and nudges with the missing rules by name.
 Reading from the installed plugin rather than a list baked into the audit
 keeps `legion-audit` dependency-free and means it reports against the version
