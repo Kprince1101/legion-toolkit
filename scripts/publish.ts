@@ -11,9 +11,17 @@ if (process.env.GITHUB_ACTIONS !== 'true') {
   process.exit(1);
 }
 
+const hasToken = (): boolean =>
+  (process.env.NODE_AUTH_TOKEN ?? '').length > 0;
+
+const hasOidc = (): boolean =>
+  (process.env.ACTIONS_ID_TOKEN_REQUEST_URL ?? '').length > 0;
+
 const assertAuthenticated = (): void => {
-  if (process.env.LEGION_PUBLISH_OIDC === '1') {
-    console.log('skipping the auth check; publishing via trusted publishing');
+  if (!hasToken() && hasOidc()) {
+    console.log(
+      'no NODE_AUTH_TOKEN and OIDC is available; publishing via npm trusted publishing',
+    );
     return;
   }
   const result = spawnSync('npm', ['whoami'], { encoding: 'utf8' });
@@ -21,15 +29,14 @@ const assertAuthenticated = (): void => {
     console.log(`npm authenticated as ${result.stdout.trim()}`);
     return;
   }
-  const hasToken = (process.env.NODE_AUTH_TOKEN ?? '').length > 0;
   console.error('npm is not authenticated, so nothing was published.');
-  if (hasToken) {
+  if (hasToken()) {
     console.error(
       'NODE_AUTH_TOKEN is set but npm rejected it. The token is expired, revoked, or lacks publish rights.',
     );
   } else {
     console.error(
-      'NODE_AUTH_TOKEN is empty. Set the NPM_TOKEN repository secret, or set LEGION_PUBLISH_OIDC=1 if these packages use npm trusted publishing.',
+      'NODE_AUTH_TOKEN is empty and no OIDC token endpoint is available. Set the NPM_TOKEN secret, or configure trusted publishing and grant id-token: write.',
     );
   }
   console.error(
