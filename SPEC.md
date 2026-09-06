@@ -326,6 +326,16 @@ block, so the steering cannot drift from the enforcement. The block
 points at LEGION-STANDARDS.md for the reasoning; it does not reproduce
 it.
 
+The block also tells the agent how to dial the toolkit in for this repo,
+not only what the rules are: where the levels live
+(`scripts/sync-oxlintrc.mts` and `defineLegionConfig`), what each level
+means and how to propose raising one, how to declare `any` boundary paths
+and comment allowances instead of bypassing, how to run `legion-audit` and
+read the scorecard, and that a bypass is a `disable-next-line` with a
+reason and nothing else. The goal is an agent that adjusts the
+configuration through the sanctioned knobs and asks before changing a
+level, rather than one that reaches for a directive.
+
 Also registers the hooks below in `.claude/settings.json`, merging with
 whatever is there.
 
@@ -536,6 +546,16 @@ Repo: https://github.com/Kprince1101/legion-toolkit (created 2026-09-06).
 `repository.url` in every package points here, with `directory` set per
 workspace, and the npm trusted publisher for each package is this repo's
 `release.yml`.
+
+## Day one (done 2026-09-06)
+
+Built a day early. Everything in the day one plan below shipped except the
+publish itself, which needs the npm trusted publisher configured by hand
+once. Highlights beyond the plan: scripts are TypeScript run through Node's
+type stripping (the comment rule made JSDoc types illegal), the audit CLI
+strips ANSI and ignores directive-shaped text inside strings, and the
+equivalence test keeps its temporary oxlint config at the repo root
+because oxlint resolves `jsPlugins` relative to the config file.
 
 ## Day one plan (2026-09-07)
 
