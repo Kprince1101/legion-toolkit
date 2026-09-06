@@ -2,7 +2,7 @@ import type { Rule } from 'eslint';
 import type { TSESTree } from '@typescript-eslint/types';
 import type { LegionRuleModule } from '../types.js';
 import { getContext } from '../types.js';
-import { elementName, importedFrom } from '../jsx.js';
+import { elementName, localNamesFor } from '../jsx.js';
 
 const rule: LegionRuleModule = {
   meta: {
@@ -20,15 +20,14 @@ const rule: LegionRuleModule = {
   },
   create: (context: Rule.RuleContext) => {
     const { report } = getContext(context);
-    let imported = new Set<string>();
+    let localNames = new Set<string>();
     return {
       Program: (node: TSESTree.Program) => {
-        imported = importedFrom(node, 'react-native');
+        localNames = localNamesFor(node, 'react-native', 'Button');
       },
       JSXOpeningElement: (node: TSESTree.JSXOpeningElement) => {
         const name = elementName(node);
-        if (name !== 'Button') return;
-        if (!imported.has('Button')) return;
+        if (name === null || !localNames.has(name)) return;
         report({ loc: node.loc, messageId: 'rnButton' });
       },
     };

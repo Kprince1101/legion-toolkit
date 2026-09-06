@@ -191,21 +191,17 @@ const compilerWithoutRule = (
   memoFindings: number,
 ): Advice | null => {
   if (!toolchain.reactCompiler) return null;
+  if (memoFindings > 0) return null;
   return {
     id: 'react-compiler-manual-memo',
     area: 'toolchain',
-    title: 'The React Compiler is installed, but no-manual-memo is off.',
-    why: 'The compiler memoizes for you, so every hand-written useMemo and useCallback is now a dependency array to keep correct for no benefit. A stale dep array is a real bug; no dep array cannot be one.',
+    title: 'The React Compiler is installed. Check `no-manual-memo` is on.',
+    why: 'The compiler memoizes for you, so every hand-written useMemo and useCallback becomes a dependency array to keep correct for no benefit, and a stale dep array is a real bug where no dep array cannot be. This audit cannot see your rule levels, only that the compiler is here and the rule is reporting nothing.',
     fix: ['set reactCompiler: true in defineLegionConfig'],
-    detail: memoCountDetail(memoFindings),
+    detail: [
+      'If the rule is already on and your components hold no manual memoization, nothing to do.',
+    ],
   };
-};
-
-const memoCountDetail = (count: number): string[] => {
-  if (count === 0) return [];
-  return [
-    `${count} useMemo/useCallback call(s) in this repo would be flagged.`,
-  ];
 };
 
 const addPrettier = (toolchain: Toolchain): Advice | null => {

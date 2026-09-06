@@ -14,10 +14,17 @@ runRule('no-rn-button', rule, {
     {
       code: "import { View } from 'react-native';\nexport const A = () => <View />;",
     },
+    {
+      code: "import { Button as RNButton } from 'react-native';\nexport const A = () => <Button onPress={go} />;",
+    },
   ],
   invalid: [
     {
       code: `${RN_IMPORT}export const A = () => <Button title="Go" onPress={go} />;`,
+      errors: [{ messageId: 'rnButton' }],
+    },
+    {
+      code: 'import { Button as RNButton } from \'react-native\';\nexport const A = () => <RNButton title="Go" onPress={go} />;',
       errors: [{ messageId: 'rnButton' }],
     },
   ],

@@ -12,6 +12,9 @@ runRule('no-target-blank-without-rel', rule, {
     { code: 'export const A = () => <a href={u}>x</a>;' },
     { code: 'export const A = () => <a href={u} target="_self">x</a>;' },
     { code: 'export const A = ({ p }) => <a target="_blank" {...p}>x</a>;' },
+    {
+      code: 'export const A = ({ rel }) => <a href={u} target="_blank" rel={rel}>x</a>;',
+    },
   ],
   invalid: [
     {

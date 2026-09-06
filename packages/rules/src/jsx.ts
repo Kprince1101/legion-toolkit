@@ -1,5 +1,6 @@
 import type { TSESTree } from '@typescript-eslint/types';
 import type { AnyNode } from './types.js';
+import { walk } from './ast.js';
 
 export const elementName = (
   node: TSESTree.JSXOpeningElement,
@@ -54,9 +55,15 @@ export const staticValue = (
   return null;
 };
 
-export const isValuelessTrue = (
+export const isTrueAttribute = (
   attribute: TSESTree.JSXAttribute | null,
-): boolean => attribute !== null && attribute.value === null;
+): boolean => {
+  if (attribute === null) return false;
+  if (attribute.value === null) return true;
+  if (attribute.value.type !== 'JSXExpressionContainer') return false;
+  const { expression } = attribute.value;
+  return expression.type === 'Literal' && expression.value === true;
+};
 
 export const isFalseLiteral = (
   attribute: TSESTree.JSXAttribute | null,
@@ -67,33 +74,35 @@ export const isFalseLiteral = (
   return expression.type === 'Literal' && expression.value === false;
 };
 
-export const importedFrom = (
+export const localNamesFor = (
   program: TSESTree.Program,
   moduleName: string,
+  exportedName: string,
 ): Set<string> => {
   const names = new Set<string>();
   for (const statement of program.body) {
     if (statement.type !== 'ImportDeclaration') continue;
     if (String(statement.source.value) !== moduleName) continue;
     for (const specifier of statement.specifiers) {
-      if (specifier.type === 'ImportSpecifier') {
-        names.add(specifier.local.name);
-      }
+      if (specifier.type !== 'ImportSpecifier') continue;
+      const { imported } = specifier;
+      if (imported.type !== 'Identifier') continue;
+      if (imported.name !== exportedName) continue;
+      names.add(specifier.local.name);
     }
   }
   return names;
 };
 
-export const childElements = (node: AnyNode): string[] => {
+export const descendantElements = (node: AnyNode): string[] => {
   const names: string[] = [];
-  const children = (node as { children?: AnyNode[] }).children ?? [];
-  for (const child of children) {
-    if (child.type === 'JSXElement') {
-      const opening = (child as unknown as TSESTree.JSXElement).openingElement;
-      const name = elementName(opening);
-      if (name) names.push(name);
-      names.push(...childElements(child));
-    }
-  }
+  walk(node, (child) => {
+    if (child === node) return undefined;
+    if (child.type !== 'JSXElement') return undefined;
+    const opening = (child as unknown as TSESTree.JSXElement).openingElement;
+    const name = elementName(opening);
+    if (name) names.push(name);
+    return undefined;
+  });
   return names;
 };

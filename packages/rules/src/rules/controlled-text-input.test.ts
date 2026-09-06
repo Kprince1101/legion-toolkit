@@ -11,6 +11,9 @@ runRule('controlled-text-input', rule, {
       code: 'export const A = () => <TextInput value={name} editable={false} />;',
     },
     { code: 'export const A = () => <TextInput value={name} readOnly />;' },
+    {
+      code: 'export const A = () => <TextInput value={name} readOnly={true} />;',
+    },
     { code: 'export const A = ({ p }) => <TextInput value={name} {...p} />;' },
     { code: 'export const A = () => <TextInput placeholder="Name" />;' },
   ],

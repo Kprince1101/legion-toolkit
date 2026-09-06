@@ -8,7 +8,7 @@ import {
   hasAttribute,
   hasSpread,
   isFalseLiteral,
-  isValuelessTrue,
+  isTrueAttribute,
 } from '../jsx.js';
 
 const INPUTS = new Set(['TextInput', 'ThemedTextInput']);
@@ -39,7 +39,7 @@ const rule: LegionRuleModule = {
         if (hasAttribute(node, 'onChange')) return;
         const editable = findAttribute(node, 'editable');
         if (isFalseLiteral(editable)) return;
-        if (isValuelessTrue(findAttribute(node, 'readOnly'))) return;
+        if (isTrueAttribute(findAttribute(node, 'readOnly'))) return;
         report({ loc: node.loc, messageId: 'frozen', data: { name } });
       },
     };

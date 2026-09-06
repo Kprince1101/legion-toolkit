@@ -132,12 +132,12 @@ describe('toolchainAdvice', () => {
     expect(ids(advice)).toContain('no-expo-doctor');
   });
 
-  it('nudges when the React Compiler is on but no-manual-memo is not', () => {
+  it('nudges when the React Compiler is installed and the memo rule reports nothing', () => {
     const advice = toolchainAdvice(
       toolchain({ reactCompiler: true }),
       lockfile(['yarn.lock']),
       NO_EXPO,
-      140,
+      0,
     );
     const nudge = advice.find(
       (entry) => entry.id === 'react-compiler-manual-memo',
@@ -145,7 +145,16 @@ describe('toolchainAdvice', () => {
     expect(nudge?.fix).toEqual([
       'set reactCompiler: true in defineLegionConfig',
     ]);
-    expect(nudge?.detail[0]).toContain('140');
+  });
+
+  it('stays quiet when the memo rule is already reporting, which proves it is on', () => {
+    const advice = toolchainAdvice(
+      toolchain({ reactCompiler: true }),
+      lockfile(['yarn.lock']),
+      NO_EXPO,
+      140,
+    );
+    expect(ids(advice)).not.toContain('react-compiler-manual-memo');
   });
 
   it('says nothing about the compiler when it is not installed', () => {

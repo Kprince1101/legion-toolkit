@@ -14,6 +14,12 @@ runRule('touchable-has-accessibility-label', rule, {
     },
     { code: 'export const A = () => <Pressable><Icon /></Pressable>;' },
     {
+      code: 'export const A = () => <Pressable onPress={go}><><Text>Save</Text></></Pressable>;',
+    },
+    {
+      code: 'export const A = () => <Pressable onPress={go}>{cond && <Text>Save</Text>}</Pressable>;',
+    },
+    {
       code: 'export const A = ({ p }) => <Pressable onPress={go} {...p}><Icon /></Pressable>;',
     },
     { code: 'export const A = () => <View onPress={go}><Icon /></View>;' },

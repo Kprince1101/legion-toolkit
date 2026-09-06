@@ -11,13 +11,13 @@ const rule: LegionRuleModule = {
     type: 'problem',
     docs: {
       description:
-        'target="_blank" always carries rel="noopener noreferrer". Without it the opened page can navigate the tab it came from.',
+        'target="_blank" always carries noopener or noreferrer in rel. Without one the opened page can navigate the tab it came from.',
       standard: 'LEGION-STANDARDS section 5',
     },
     schema: [],
     messages: {
       missingRel:
-        '`target="_blank"` without `rel="noopener noreferrer"` (LEGION-STANDARDS section 5). The opened page gets a handle on this one through `window.opener` and can redirect it somewhere else while the user is away.',
+        '`target="_blank"` without `noopener` or `noreferrer` in `rel` (LEGION-STANDARDS section 5). The opened page gets a handle on this one through `window.opener` and can redirect it somewhere else while the user is away. Either value closes it; `rel="noopener noreferrer"` also drops the referrer.',
     },
   },
   create: (context: Rule.RuleContext) => {
@@ -28,8 +28,10 @@ const rule: LegionRuleModule = {
         if (name === null || !TARGETED.has(name)) return;
         if (staticValue(findAttribute(node, 'target')) !== '_blank') return;
         if (hasSpread(node)) return;
-        const rel = staticValue(findAttribute(node, 'rel')) ?? '';
-        const parts = new Set(rel.split(/\s+/).filter(Boolean));
+        const attribute = findAttribute(node, 'rel');
+        const rel = staticValue(attribute);
+        if (attribute !== null && rel === null) return;
+        const parts = new Set((rel ?? '').split(/\s+/).filter(Boolean));
         if (parts.has('noopener') || parts.has('noreferrer')) return;
         report({ loc: node.loc, messageId: 'missingRel' });
       },

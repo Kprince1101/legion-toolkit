@@ -2,7 +2,12 @@ import type { Rule } from 'eslint';
 import type { TSESTree } from '@typescript-eslint/types';
 import type { AnyNode, LegionRuleModule } from '../types.js';
 import { getContext } from '../types.js';
-import { childElements, elementName, hasAttribute, hasSpread } from '../jsx.js';
+import {
+  descendantElements,
+  elementName,
+  hasAttribute,
+  hasSpread,
+} from '../jsx.js';
 
 export interface TouchableOptions {
   components?: string[];
@@ -53,7 +58,7 @@ const rule: LegionRuleModule = {
         if (hasSpread(opening)) return;
         if (hasAttribute(opening, 'accessibilityLabel')) return;
         if (hasAttribute(opening, 'aria-label')) return;
-        const children = childElements(node as unknown as AnyNode);
+        const children = descendantElements(node as unknown as AnyNode);
         if (children.some((child) => TEXT_ELEMENTS.has(child))) return;
         report({ loc: opening.loc, messageId: 'missingLabel', data: { name } });
       },
