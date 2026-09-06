@@ -7,6 +7,7 @@ import { calleeName, functionName, isFunctionNode, walk } from '../ast.js';
 export interface PresentationalComponentsOptions {
   allowState?: boolean;
   allowRenderMaps?: boolean;
+  reactCompiler?: boolean;
 }
 
 type FunctionLike =
@@ -98,6 +99,11 @@ const isRenderLoop = (
   return returnsJsx(callback as unknown as FunctionLike);
 };
 
+const derivationMessage = (reactCompiler: boolean): string => {
+  if (reactCompiler) return 'derivationCompiler';
+  return 'derivation';
+};
+
 const rule: LegionRuleModule = {
   meta: {
     type: 'problem',
@@ -112,6 +118,7 @@ const rule: LegionRuleModule = {
         properties: {
           allowState: { type: 'boolean' },
           allowRenderMaps: { type: 'boolean' },
+          reactCompiler: { type: 'boolean' },
         },
         additionalProperties: false,
       },
@@ -123,6 +130,8 @@ const rule: LegionRuleModule = {
         '`{{hook}}` inside `{{component}}` is state in a component (LEGION-STANDARDS section 1). Own it in `use{{component}}` and return the value and a `handleX` setter.',
       derivation:
         '`{{hook}}` inside `{{component}}` is derivation in a component (LEGION-STANDARDS section 1). Compute it in `use{{component}}` and return a named value.',
+      derivationCompiler:
+        '`{{hook}}` inside `{{component}}` is derivation in a component (LEGION-STANDARDS section 1), and the React Compiler already memoizes. Compute the plain value in `use{{component}}` and drop the `{{hook}}`.',
       fetching:
         'Data fetching inside `{{component}}` is not allowed (LEGION-STANDARDS section 1). Fetch in a server component or in `use{{component}}`.',
       handlerBody:
@@ -136,6 +145,7 @@ const rule: LegionRuleModule = {
     const settings = (options[0] ?? {}) as PresentationalComponentsOptions;
     const allowState = settings.allowState === true;
     const allowRenderMaps = settings.allowRenderMaps !== false;
+    const reactCompiler = settings.reactCompiler === true;
 
     const checkNestedFunction = (fn: FunctionLike, component: string): void => {
       if (returnsJsx(fn)) return;
@@ -164,7 +174,11 @@ const rule: LegionRuleModule = {
         return;
       }
       if (DERIVATION_HOOKS.has(name)) {
-        report({ loc: call.loc, messageId: 'derivation', data });
+        report({
+          loc: call.loc,
+          messageId: derivationMessage(reactCompiler),
+          data,
+        });
         return;
       }
       if (FETCHERS.has(name) && call.callee.type === 'Identifier') {

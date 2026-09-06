@@ -10,7 +10,7 @@ import {
 import { resolve } from 'node:path';
 import { ESLint } from 'eslint';
 import * as tsParser from '@typescript-eslint/parser';
-import { strict } from 'legion-rules';
+import { defineLegionConfig, strictInput } from 'legion-rules';
 import plugin from './index.js';
 
 const ROOT = resolve(__dirname, '..', '..', '..');
@@ -24,6 +24,11 @@ const COMPARED_RULES = new Set([
 ]);
 
 const KNOWN_DIVERGENCE_FILES = new Set(['invalid/file-wide.ts']);
+
+const FIXTURE_CONFIG = defineLegionConfig({
+  ...strictInput,
+  reactCompiler: true,
+});
 
 const isCompared = (rule: string): boolean =>
   rule.startsWith('legion/') || COMPARED_RULES.has(rule);
@@ -49,7 +54,7 @@ const runOxlint = (): Set<string> => {
   const configPath = resolve(ROOT, `.fixtures-${process.pid}.oxlintrc.json`);
   writeFileSync(
     configPath,
-    `${JSON.stringify({ ...strict.oxlint, plugins: ['eslint', 'typescript', 'unicorn', 'react'] }, null, 2)}\n`,
+    `${JSON.stringify({ ...FIXTURE_CONFIG.oxlint, plugins: ['eslint', 'typescript', 'unicorn', 'react'] }, null, 2)}\n`,
   );
   const result = spawnSync(
     OXLINT_BIN,
@@ -104,7 +109,7 @@ const runEslint = async (): Promise<Set<string>> => {
         },
         linterOptions: { reportUnusedDisableDirectives: 'off' },
       },
-      ...(plugin.configs.strict as never[]),
+      ...(FIXTURE_CONFIG.eslint(plugin) as never[]),
     ],
   });
   const keys = new Set<string>();

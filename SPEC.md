@@ -193,12 +193,12 @@ the config must enable it explicitly). The equivalence test covers it.
 
 ### Heuristic rules (shipped day one with the rest; tune on real repos)
 
-| Rule                           | Standard          | Heuristic                                                                                                                                                                                                                           |
-| ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `presentational-components`    | section 0.1, 1    | In a function that returns JSX and has a PascalCase name: `useEffect`, `fetch`, `await`, `async` bodies, and handler consts with block bodies of more than one statement. Options to also flag `useState` and inline `.map` in JSX. |
-| `no-boolean-request-state`     | REACT-PARTNERSHIP | Two or more `useState(true                                                                                                                                                                                                          | false)`in one function whose names match`/loading | error | success | fetching | pending/i`. Message points at the tagged-union shape. |
-| `no-literal-conditions-in-jsx` | section 1         | A comparison against a string literal used as a JSX conditional (`{slug === 'x' && ...}`).                                                                                                                                          |
-| `no-admin-client-in-browser`   | section 6         | Import of `lib/supabase/admin` (configurable path) in a file that has `'use client'` or lives under `components/` or `hooks/`.                                                                                                      |
+| Rule                           | Standard       | Heuristic                                                                                                                                                                                                                           |
+| ------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `presentational-components`    | section 0.1, 1 | In a function that returns JSX and has a PascalCase name: `useEffect`, `fetch`, `await`, `async` bodies, and handler consts with block bodies of more than one statement. Options to also flag `useState` and inline `.map` in JSX. |
+| `no-literal-conditions-in-jsx` | section 1      | A comparison against a string literal used as a JSX conditional (`{slug === 'x' && ...}`).                                                                                                                                          |
+| `no-admin-client-in-browser`   | section 6      | Import of `lib/supabase/admin` (configurable path) in a file that has `'use client'` or lives under `components/` or `hooks/`.                                                                                                      |
+| `no-manual-memo`               | React Compiler | `useMemo`, `useCallback`, `memo()` anywhere. Off unless `reactCompiler: true`, which turns it on at the config's highest level; `presentational-components` then says "drop it, the compiler memoizes" instead of "move it".        |
 
 ### Shareable configs
 

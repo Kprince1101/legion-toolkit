@@ -22,7 +22,6 @@ build your own plugin or config tooling on the rules.
 | `no-client-globals-in-state-init` | §1 (hydration)            | `window`, `document`, `localStorage`, `sessionStorage`, `navigator`, `location`, `matchMedia` inside `useState(...)`.                                                                                                           |
 | `no-use-client-in-page`           | §0.6, §3                  | `'use client'` on a `page` or `layout` file under `app/`.                                                                                                                                                                       |
 | `guarded-context-hook`            | §0.5, §4                  | `useContext` anywhere except inside a `use*` hook whose body throws.                                                                                                                                                            |
-| `no-boolean-request-state`        | REACT-PARTNERSHIP         | Two or more `useState` slots named like request state (`isLoading`, `error`, `success`, `submitting`, ...) in one function. Wants one tagged union.                                                                             |
 | `no-literal-conditions-in-jsx`    | §1                        | A comparison against a string or number literal inside JSX (`slug === 'x' && ...`). Wants a named flag from the hook.                                                                                                           |
 | `no-admin-client-in-browser`      | §6                        | An import of the service-role client in a `'use client'` file, a component, a hook, or a `*Client.tsx`. Options: `adminModules`, `browserPaths`.                                                                                |
 
@@ -57,6 +56,7 @@ const config = defineLegionConfig({
   anyBoundaries: ['lib/supabase/**', '**/*.d.ts'],
   componentMaxLines: 180,
   comments: { allowInEmptyBlocks: false, allowPatterns: [] },
+  reactCompiler: true,
 });
 
 config.oxlint; // object for .oxlintrc.json

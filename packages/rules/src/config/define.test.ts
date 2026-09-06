@@ -105,10 +105,34 @@ describe('defineLegionConfig', () => {
   });
 });
 
+describe('reactCompiler', () => {
+  it('turns no-manual-memo on at the highest configured level', () => {
+    const config = defineLegionConfig({
+      rules: { 'no-enum': 2 },
+      reactCompiler: true,
+    });
+    expect(config.levels['no-manual-memo']).toBe(2);
+    expect(config.oxlint.rules['legion/presentational-components']).toEqual([
+      'off',
+      { reactCompiler: true },
+    ]);
+  });
+
+  it('leaves no-manual-memo off by default and respects an explicit level', () => {
+    expect(defineLegionConfig({}).levels['no-manual-memo']).toBe(0);
+    expect(
+      defineLegionConfig({
+        rules: { 'no-manual-memo': 1 },
+        reactCompiler: true,
+      }).levels['no-manual-memo'],
+    ).toBe(1);
+  });
+});
+
 describe('presets', () => {
   it('recommended runs every rule at 2 except no-disables', () => {
     for (const name of RULE_NAMES) {
-      if (name === 'no-disables') continue;
+      if (name === 'no-disables' || name === 'no-manual-memo') continue;
       expect(recommended.levels[name]).toBe(2);
     }
     expect(recommended.levels['no-disables']).toBe(0);
@@ -117,7 +141,7 @@ describe('presets', () => {
 
   it('strict locks every rule and warns on every bypass', () => {
     for (const name of RULE_NAMES) {
-      if (name === 'no-disables') continue;
+      if (name === 'no-disables' || name === 'no-manual-memo') continue;
       expect(strict.levels[name]).toBe(3);
     }
     expect(strict.levels['no-disables']).toBe(1);

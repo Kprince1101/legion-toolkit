@@ -18,6 +18,7 @@ export interface LegionConfigInput {
   comments?: NoNarrativeCommentsOptions;
   components?: PresentationalComponentsOptions;
   adminClient?: NoAdminClientInBrowserOptions;
+  reactCompiler?: boolean;
 }
 
 export interface OxlintOverride {
@@ -75,12 +76,24 @@ const TERNARY_RULES_OXLINT = [
 
 const TERNARY_RULES_ESLINT = ['no-ternary', 'no-unneeded-ternary'];
 
+const highestLevel = (input: LegionConfigInput): Level => {
+  const levels = Object.values(input.rules ?? {}) as Level[];
+  if (levels.length === 0) return 3;
+  return Math.max(...levels) as Level;
+};
+
 const resolveLevels = (
   input: LegionConfigInput,
 ): Record<LegionRuleName, Level> => {
   const resolved = {} as Record<LegionRuleName, Level>;
   for (const name of RULE_NAMES) {
     resolved[name] = input.rules?.[name] ?? 0;
+  }
+  if (
+    input.reactCompiler === true &&
+    input.rules?.['no-manual-memo'] === undefined
+  ) {
+    resolved['no-manual-memo'] = highestLevel(input);
   }
   return resolved;
 };
@@ -92,7 +105,12 @@ const optionsFor = (
 ): unknown => {
   if (name === 'no-narrative-comments') return input.comments ?? {};
   if (name === 'scoped-disables') return { locked };
-  if (name === 'presentational-components') return input.components ?? {};
+  if (name === 'presentational-components') {
+    return {
+      ...(input.components ?? {}),
+      reactCompiler: input.reactCompiler === true,
+    };
+  }
   if (name === 'no-admin-client-in-browser') return input.adminClient ?? {};
   return undefined;
 };

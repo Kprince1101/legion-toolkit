@@ -94,5 +94,15 @@ runRule('presentational-components', rule, {
       code: 'function Panel() { const [n] = useState(0); return <div>{n}</div>; }',
       errors: [{ messageId: 'state' }],
     },
+    {
+      code: 'export const Panel = ({ items }: PanelProps) => { const total = useMemo(() => items.length, [items]); return <div>{total}</div>; };',
+      options: [{ reactCompiler: true }],
+      errors: [
+        {
+          messageId: 'derivationCompiler',
+          data: { hook: 'useMemo', component: 'Panel' },
+        },
+      ],
+    },
   ],
 });
