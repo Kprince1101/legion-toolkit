@@ -6,6 +6,9 @@ export {
   DEFAULT_ANY_BOUNDARIES,
   DEFAULT_COMPONENT_FILES,
   DEFAULT_TEST_FILES,
+  REACT_NATIVE_ANY_BOUNDARIES,
+  REACT_NATIVE_BROWSER_PATHS,
+  WEB_ONLY_RULES,
 } from './config/define.js';
 export type {
   LegionConfig,
@@ -18,8 +21,10 @@ export type {
 export {
   recommended,
   strict,
+  reactNative,
   recommendedInput,
   strictInput,
+  reactNativeInput,
 } from './config/presets.js';
 export { levelToSeverity, isLevel, isLocked, LEVELS } from './config/levels.js';
 export type { RuleEntry } from './config/levels.js';

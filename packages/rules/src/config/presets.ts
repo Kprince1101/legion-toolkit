@@ -44,3 +44,10 @@ export const strictInput: LegionConfigInput = {
 export const recommended: LegionConfig = defineLegionConfig(recommendedInput);
 
 export const strict: LegionConfig = defineLegionConfig(strictInput);
+
+export const reactNativeInput: LegionConfigInput = {
+  ...recommendedInput,
+  reactNative: true,
+};
+
+export const reactNative: LegionConfig = defineLegionConfig(reactNativeInput);

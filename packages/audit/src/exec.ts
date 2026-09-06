@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PackageManager } from './types.js';
+import { ancestors } from './workspace.js';
 
 export interface ExecResult {
   code: number;
@@ -46,8 +47,15 @@ const binSuffix = (): string => {
 };
 
 export const localBin = (root: string, name: string): string | null => {
-  const candidate = join(root, 'node_modules', '.bin', `${name}${binSuffix()}`);
-  if (existsSync(candidate)) return candidate;
+  for (const dir of ancestors(root)) {
+    const candidate = join(
+      dir,
+      'node_modules',
+      '.bin',
+      `${name}${binSuffix()}`,
+    );
+    if (existsSync(candidate)) return candidate;
+  }
   return null;
 };
 

@@ -2,9 +2,9 @@ import legion from 'legion-toolkit/eslint-plugin';
 import * as tsParser from '@typescript-eslint/parser';
 
 export default [
-  { ignores: ['node_modules/**', 'native/**'] },
+  { ignores: ['node_modules/**'] },
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['native/**/*.ts', 'native/**/*.tsx'],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',
@@ -12,5 +12,5 @@ export default [
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
-  ...legion.configs.recommended,
+  ...legion.configs.reactNative,
 ];

@@ -118,6 +118,47 @@ const coverageSection = (result: AuditResult): string => {
   return lines.join('\n');
 };
 
+const adviceSection = (result: AuditResult): string => {
+  if (result.advice.length === 0) {
+    return 'No nudges. This repo is set up the way Legion ships.';
+  }
+  const blocks = result.advice.map((entry) => {
+    const lines = [`### ${entry.title}`, entry.why];
+    lines.push(['```sh', ...entry.fix, '```'].join('\n'));
+    if (entry.detail.length > 0) {
+      lines.push(entry.detail.map((line) => `- ${line}`).join('\n'));
+    }
+    return lines.join('\n\n');
+  });
+  return [
+    'Advisory only. None of these affect the score or the exit code.',
+    ...blocks,
+  ].join('\n\n');
+};
+
+const toolchainSection = (result: AuditResult): string => {
+  const { toolchain } = result;
+  return table(
+    ['Fact', 'Value'],
+    [
+      [
+        'package manager',
+        `${toolchain.packageManager} (${toolchain.yarnFlavor})`,
+      ],
+      ['packageManager field', toolchain.packageManagerField ?? 'not set'],
+      ['framework', toolchain.framework],
+      ['workspaces', String(toolchain.workspaces)],
+      [
+        'linter config',
+        `oxlint ${toolchain.hasOxlintConfig}, eslint ${toolchain.hasEslintConfig}`,
+      ],
+      ['legion plugin wired', String(toolchain.pluginReferenced)],
+      ['prettier config', String(toolchain.hasPrettierConfig)],
+      ['tsconfig', String(toolchain.hasTsconfig)],
+    ],
+  );
+};
+
 const regressionSection = (regressions: Regression[]): string => {
   if (regressions.length === 0) return 'No regressions against the baseline.';
   return table(
@@ -151,11 +192,13 @@ export const renderMarkdown = (
   sections.push(`## PR hygiene`, prSection(result));
   sections.push(`## Tests by file`, coverageSection(result));
   sections.push(`## Lockfile`, lockfileLine(result));
+  sections.push(`## Toolchain`, toolchainSection(result));
+  sections.push(`## Nudges`, adviceSection(result));
   if (regressions !== null)
     sections.push(`## Baseline`, regressionSection(regressions));
   sections.push(
     `## Score formula`,
-    'Start at 100. Minus 2 per `legion/*` error (cap 40), 0.5 per lint warning (cap 10), 15 for a failed typecheck, 15 for a failed lint, 20 for failed tests, 5 for unformatted files, up to 10 scaled by the share of commits without a PR number, 1 per component or hook without a test (cap 15), 5 per file-wide disable (cap 15). The number is for comparing runs of the same repo, not for comparing repos.',
+    'Start at 100. Minus 2 per `legion/*` error (cap 40), 0.5 per lint warning (cap 10), 15 for a failed typecheck, 15 for a failed lint, 20 for failed tests, 5 for unformatted files, up to 15 scaled by the *share* of components and hooks with no test, and 5 per file-wide disable (cap 15).\n\nTwo things deliberately do not score. PR hygiene is history on `main`: it cannot be fixed retroactively and it corrects itself as PR-tagged commits land, so it is a nudge instead. And the test penalty is a share rather than a count, so decomposing one oversized component into ten presentational children cannot make the score worse than the component it replaced. The number is for comparing runs of the same repo, not for comparing repos.',
   );
   return `${sections.join('\n\n')}\n`;
 };

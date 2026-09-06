@@ -1,4 +1,4 @@
-import type { AuditResult } from '../types.js';
+import type { AuditResult, TestCoverage } from '../types.js';
 
 export const SCORE_WEIGHTS = {
   legionError: 2,
@@ -9,9 +9,7 @@ export const SCORE_WEIGHTS = {
   lintFail: 15,
   testsFail: 20,
   formatFail: 5,
-  prHygieneMax: 10,
-  missingTest: 1,
-  missingTestCap: 15,
+  uncoveredMax: 15,
   fileWideDisable: 5,
   fileWideDisableCap: 15,
 } as const;
@@ -29,8 +27,14 @@ const gatePenalty = (
   return 0;
 };
 
+export const uncoveredShare = (coverage: TestCoverage): number => {
+  const total = coverage.components + coverage.hooks;
+  if (total === 0) return 0;
+  return coverage.missing.length / total;
+};
+
 export const computeScore = (
-  result: Omit<AuditResult, 'score' | 'schema' | 'generatedAt'>,
+  result: Omit<AuditResult, 'score' | 'schema' | 'generatedAt' | 'advice'>,
 ): number => {
   const w = SCORE_WEIGHTS;
   let score = 100;
@@ -43,14 +47,7 @@ export const computeScore = (
   score -= gatePenalty(result, 'lint', w.lintFail);
   score -= gatePenalty(result, 'tests', w.testsFail);
   score -= gatePenalty(result, 'format', w.formatFail);
-  if (result.prHygiene.status !== 'skipped') {
-    score -= (1 - result.prHygiene.ratio) * w.prHygieneMax;
-  }
-  score -= clamp(
-    result.testCoverage.missing.length * w.missingTest,
-    0,
-    w.missingTestCap,
-  );
+  score -= uncoveredShare(result.testCoverage) * w.uncoveredMax;
   score -= clamp(
     result.directives.fileWide.length * w.fileWideDisable,
     0,

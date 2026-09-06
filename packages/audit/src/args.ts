@@ -1,7 +1,7 @@
 export type FailOn = 'regression' | 'error' | 'never';
 
 export interface CliArgs {
-  command: 'audit' | 'directives' | 'help';
+  command: 'audit' | 'directives' | 'advice' | 'help';
   root: string;
   md: string | null;
   json: string | null;
@@ -11,6 +11,7 @@ export interface CliArgs {
   runTests: boolean;
   runTypecheck: boolean;
   runFormat: boolean;
+  runExpoDoctor: boolean;
   quiet: boolean;
   ignore: string[];
 }
@@ -37,6 +38,7 @@ export const parseArgs = (argv: string[]): CliArgs => {
     runTests: true,
     runTypecheck: true,
     runFormat: true,
+    runExpoDoctor: true,
     quiet: false,
     ignore: [],
   };
@@ -44,6 +46,7 @@ export const parseArgs = (argv: string[]): CliArgs => {
   while (index < argv.length) {
     const arg = argv[index] ?? '';
     if (arg === 'directives') args.command = 'directives';
+    else if (arg === 'advice') args.command = 'advice';
     else if (arg === 'help' || arg === '--help' || arg === '-h')
       args.command = 'help';
     else if (arg === '--root') {
@@ -72,6 +75,7 @@ export const parseArgs = (argv: string[]): CliArgs => {
     else if (arg === '--no-tests') args.runTests = false;
     else if (arg === '--no-typecheck') args.runTypecheck = false;
     else if (arg === '--no-format') args.runFormat = false;
+    else if (arg === '--no-expo-doctor') args.runExpoDoctor = false;
     else if (arg === '--quiet' || arg === '-q') args.quiet = true;
     else throw new Error(`unknown argument: ${arg}`);
     index += 1;
@@ -86,6 +90,7 @@ Runs a read-only scorecard of the current repo against LEGION-STANDARDS.
 Commands
   (none)        full audit: gates, rule counts, bypasses, PR hygiene, tests by file
   directives    only scan for file-wide lint disables; exit 1 if any (fast, for lint scripts)
+  advice        the nudges only, printed for a human; never fails the build
 
 Options
   --root <dir>            repo root (default: cwd)
@@ -99,5 +104,6 @@ Options
   --no-tests              skip running the test script
   --no-typecheck          skip tsc
   --no-format             skip prettier --check
+  --no-expo-doctor        skip expo-doctor on an Expo project
   --quiet, -q             no progress output on stderr
 `;

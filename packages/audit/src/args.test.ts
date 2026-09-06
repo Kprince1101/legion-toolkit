@@ -42,6 +42,7 @@ describe('parseArgs', () => {
       runTests: false,
       runTypecheck: true,
       runFormat: true,
+      runExpoDoctor: true,
       quiet: true,
       ignore: ['fixtures'],
     });
@@ -53,5 +54,13 @@ describe('parseArgs', () => {
       '--fail-on must be one of',
     );
     expect(() => parseArgs(['--md'])).toThrow('--md needs a value');
+  });
+});
+
+describe('parseArgs, advice command', () => {
+  it('reads the advice command and the expo-doctor opt-out', () => {
+    const args = parseArgs(['advice', '--no-expo-doctor']);
+    expect(args.command).toBe('advice');
+    expect(args.runExpoDoctor).toBe(false);
   });
 });

@@ -11,14 +11,14 @@ are scoped, named, explained, and impossible for locked rules. Every one of
 those is a mechanical check here, because a rule that only lives in a
 document drifts.
 
-| Package                                              | What it is                                                                                             |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [`legion-toolkit`](packages/toolkit)                 | One install, every tool as a subpath. Start here.                                                      |
-| [`eslint-plugin-legion`](packages/eslint-plugin)     | The rules as a plugin. Runs under oxlint (`jsPlugins`) and ESLint v9+, identically, proven in CI.      |
-| [`legion-rules`](packages/rules)                     | The rule engine and `defineLegionConfig`, which maps tolerance levels 0 to 3 onto either linter.       |
-| [`legion-audit`](packages/audit)                     | A read-only scorecard: gates, per-rule counts, bypasses, PR hygiene, tests by file. Markdown and JSON. |
-| [`legion-prettier-config`](packages/prettier-config) | Single quotes, trailing commas, 80 columns.                                                            |
-| [`legion-tsconfig`](packages/tsconfig)               | Strict base plus node, next, and react-native variants.                                                |
+| Package                                              | What it is                                                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [`legion-toolkit`](packages/toolkit)                 | One install, every tool as a subpath. Start here.                                                 |
+| [`eslint-plugin-legion`](packages/eslint-plugin)     | The rules as a plugin. Runs under oxlint (`jsPlugins`) and ESLint v9+, identically, proven in CI. |
+| [`legion-rules`](packages/rules)                     | The rule engine and `defineLegionConfig`, which maps tolerance levels 0 to 3 onto either linter.  |
+| [`legion-audit`](packages/audit)                     | A read-only scorecard: gates, per-rule counts, bypasses, PR hygiene, coverage. Plus the nudges.   |
+| [`legion-prettier-config`](packages/prettier-config) | Single quotes, trailing commas, 80 columns.                                                       |
+| [`legion-tsconfig`](packages/tsconfig)               | Strict base plus node, next, and react-native variants.                                           |
 
 ## Quick start
 
@@ -44,6 +44,31 @@ yarn add -D legion-toolkit oxlint prettier typescript
 
 Each package README has the full setup, including ESLint and the tolerance
 levels.
+
+## React Native
+
+`reactNative` is `recommended` with the web assumptions removed: the two
+rules that can only fire on a server-rendered page are off, and the
+service-role client check widens to every file, because on a device the whole
+bundle ships and there is no such thing as a file the user cannot reach.
+
+```js
+import legion from 'legion-toolkit/eslint-plugin';
+
+export default [...legion.configs.reactNative];
+```
+
+On an Expo project `legion-audit` also runs `expo-doctor` as a gate, with
+patch-level version drift demoted to a nudge.
+
+## Nudges
+
+`legion-audit` ends every run by saying what the repo could do better, why it
+matters, and the exact command: migrate off npm to Yarn Berry, delete the
+second lockfile, wire up the plugin you installed but never referenced, add
+the coverage report so the audit measures instead of guesses. Advisory only,
+never affecting the score or the exit code. `legion-audit advice` prints just
+those.
 
 ## Tolerance levels
 
