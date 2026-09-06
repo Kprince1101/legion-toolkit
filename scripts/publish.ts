@@ -11,6 +11,33 @@ if (process.env.GITHUB_ACTIONS !== 'true') {
   process.exit(1);
 }
 
+const assertAuthenticated = (): void => {
+  if (process.env.LEGION_PUBLISH_OIDC === '1') {
+    console.log('skipping the auth check; publishing via trusted publishing');
+    return;
+  }
+  const result = spawnSync('npm', ['whoami'], { encoding: 'utf8' });
+  if (result.status === 0) {
+    console.log(`npm authenticated as ${result.stdout.trim()}`);
+    return;
+  }
+  const hasToken = (process.env.NODE_AUTH_TOKEN ?? '').length > 0;
+  console.error('npm is not authenticated, so nothing was published.');
+  if (hasToken) {
+    console.error(
+      'NODE_AUTH_TOKEN is set but npm rejected it. The token is expired, revoked, or lacks publish rights.',
+    );
+  } else {
+    console.error(
+      'NODE_AUTH_TOKEN is empty. Set the NPM_TOKEN repository secret, or set LEGION_PUBLISH_OIDC=1 if these packages use npm trusted publishing.',
+    );
+  }
+  console.error(
+    'Without this check npm answers an unauthenticated publish with a 404 that reads as if the package does not exist.',
+  );
+  process.exit(1);
+};
+
 const publishedVersion = (name: string): string | null => {
   const result = spawnSync('npm', ['view', name, 'version'], {
     encoding: 'utf8',
@@ -19,12 +46,15 @@ const publishedVersion = (name: string): string | null => {
   return result.stdout.trim();
 };
 
+assertAuthenticated();
+
 const order = [
   'tsconfig',
   'prettier-config',
   'rules',
   'eslint-plugin',
   'audit',
+  'init',
   'toolkit',
 ];
 const dirs = readdirSync(packagesDir).filter((entry) =>
