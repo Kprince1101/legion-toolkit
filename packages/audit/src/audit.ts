@@ -56,10 +56,10 @@ const loggerFor = (options: AuditOptions): Logger => {
   return (message) => console.error(message);
 };
 
-const firstSource = (root: string, ignore: string[]): string | null => {
-  const files = listSourceFiles(root, ignore).filter((file) =>
-    file.endsWith('.tsx'),
-  );
+export const probeFile = (root: string, ignore: string[]): string | null => {
+  const files = listSourceFiles(root, ignore);
+  const preferred = files.find((file) => file.endsWith('.tsx'));
+  if (preferred) return preferred;
   return files[0] ?? null;
 };
 
@@ -116,7 +116,7 @@ export const runAudit = async (
   log('legion-audit: rule coverage');
   const coverageOfRules = await ruleCoverage(
     root,
-    firstSource(root, options.ignore),
+    probeFile(root, options.ignore),
   );
 
   const partialResult = {

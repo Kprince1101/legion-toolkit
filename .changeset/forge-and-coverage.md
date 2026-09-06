@@ -3,6 +3,14 @@
 'legion-toolkit': minor
 ---
 
+**Breaking:** `runAudit` is now `async` and returns `Promise<AuditResult>`.
+Reading the consumer's installed plugin needs a dynamic import, which cannot
+be done synchronously. Callers must `await` it. The `legion-audit` CLI does
+this internally, so only code importing `runAudit` directly is affected. The
+version bump stays minor because pre-1.0 that is where a breaking change
+lands; a `major` here would force 1.0.0, which is a decision this change
+should not make on its own.
+
 PR hygiene understands more than GitHub, and the audit reports rules your
 config never picked up.
 

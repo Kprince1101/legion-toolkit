@@ -71,3 +71,19 @@ describe('summarizeCoverage', () => {
     expect(result.unconfigured).toEqual([]);
   });
 });
+
+describe('probeFile', () => {
+  it('prefers a tsx file but falls back to any source, so a backend is not skipped', async () => {
+    const { probeFile } = await import('../audit.js');
+    const tsxRepo = repo({
+      'src/App.tsx': 'export const A = () => null;',
+      'src/util.ts': 'export const a = 1;',
+    });
+    expect(probeFile(tsxRepo, [])).toContain('.tsx');
+    const backend = repo({
+      'src/server.ts': 'export const a = 1;',
+      'src/db.ts': 'export const b = 2;',
+    });
+    expect(probeFile(backend, [])).toContain('.ts');
+  });
+});

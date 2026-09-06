@@ -1,4 +1,9 @@
-import { forgeFromRemote, forgeLabel, forgePattern } from './forge.js';
+import {
+  forgeFix,
+  forgeFromRemote,
+  forgeLabel,
+  forgePattern,
+} from './forge.js';
 import { summarizePrHygiene } from './git.js';
 
 describe('forgeFromRemote', () => {
@@ -19,6 +24,18 @@ describe('forgeFromRemote', () => {
     expect(forgeFromRemote('git@git.example.com:acme/app.git')).toBe('unknown');
     expect(forgePattern('unknown')).toBeNull();
     expect(forgeLabel('unknown')).toBe('an unrecognized host');
+  });
+});
+
+describe('forgeFix', () => {
+  it('gives the host its own command and leaves the merge policy to the advice', () => {
+    expect(forgeFix('github')).toContain('gh pr create --fill --assignee @me');
+    expect(forgeFix('gitlab')).toContain('glab mr create --fill');
+    expect(forgeFix('azure')).toContain('az repos pr create');
+    for (const forge of ['github', 'gitlab', 'bitbucket', 'azure'] as const) {
+      expect(forgeFix(forge).join(' ')).not.toContain('never merge');
+    }
+    expect(forgeFix('unknown')).toEqual([]);
   });
 });
 

@@ -128,7 +128,10 @@ export const prAdvice = (hygiene: PrHygiene): Advice | null => {
     area: 'process',
     title: `${direct} of the last ${hygiene.inspected} commits landed straight on the branch (${forgeLabel(hygiene.forge)}).`,
     why: 'Not a problem by itself, and it does not affect the score. Section 12 only requires a PR on a client repo, where nothing reaches main without review. On your own repo it is your call, so the thing to check is that the commit messages carry what a PR description would have said, because they are then the only record.',
-    fix: forgeFix(hygiene.forge),
+    fix: [
+      `client repo: ${forgeFix(hygiene.forge).join(', ')}, and never merge it yourself`,
+      'own repo: nothing to change, as long as the commit message says why',
+    ],
     detail: [],
   };
 };

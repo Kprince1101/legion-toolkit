@@ -11,20 +11,12 @@ const PROFILES: Record<Exclude<Forge, 'unknown'>, ForgeProfile> = {
   github: {
     label: 'GitHub',
     pattern: /\(#\d+\)|Merge pull request #\d+/,
-    fix: [
-      'git switch -c <branch>',
-      'gh pr create --fill --assignee @me',
-      'never merge it yourself',
-    ],
+    fix: ['git switch -c <branch>', 'gh pr create --fill --assignee @me'],
   },
   gitlab: {
     label: 'GitLab',
     pattern: /See merge request [^\s]*!\d+|![0-9]+\b/,
-    fix: [
-      'git switch -c <branch>',
-      'glab mr create --fill',
-      'never merge it yourself',
-    ],
+    fix: ['git switch -c <branch>', 'glab mr create --fill'],
   },
   bitbucket: {
     label: 'Bitbucket',
@@ -32,17 +24,12 @@ const PROFILES: Record<Exclude<Forge, 'unknown'>, ForgeProfile> = {
     fix: [
       'git switch -c <branch>',
       'push, then open the pull request in Bitbucket',
-      'never merge it yourself',
     ],
   },
   azure: {
     label: 'Azure DevOps',
     pattern: /Merged PR \d+:/,
-    fix: [
-      'git switch -c <branch>',
-      'az repos pr create',
-      'never merge it yourself',
-    ],
+    fix: ['git switch -c <branch>', 'az repos pr create'],
   },
 };
 
