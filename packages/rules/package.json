@@ -1,0 +1,55 @@
+{
+  "name": "legion-rules",
+  "version": "0.0.0",
+  "description": "The LEGION-STANDARDS rule engine: ESLint-format rules that run under oxlint and ESLint, plus tolerance-level config presets.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit/tree/main/packages/rules#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/rules"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "eslint",
+    "oxlint",
+    "lint",
+    "rules",
+    "react",
+    "legion"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/__tests__",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts && tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true}); require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "node ../../scripts/require-ci.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

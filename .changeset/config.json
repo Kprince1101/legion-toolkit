@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "Kprince1101/legion-toolkit" }
+  ],
+  "commit": false,
+  "fixed": [
+    [
+      "legion-toolkit",
+      "legion-rules",
+      "eslint-plugin-legion",
+      "legion-audit",
+      "legion-prettier-config",
+      "legion-tsconfig"
+    ]
+  ],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

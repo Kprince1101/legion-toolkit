@@ -1,0 +1,10 @@
+node_modules
+AUDIT.md
+audit.json
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+.yarn
+.yarnrc.yml
+.pnp.*
+pnpm-workspace.yaml

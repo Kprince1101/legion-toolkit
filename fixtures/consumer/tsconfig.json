@@ -1,0 +1,5 @@
+{
+  "extends": "legion-toolkit/tsconfig/next.json",
+  "compilerOptions": { "plugins": [] },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

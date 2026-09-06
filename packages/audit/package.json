@@ -1,0 +1,57 @@
+{
+  "name": "legion-audit",
+  "version": "0.0.0",
+  "description": "Read-only repo scorecard against LEGION-STANDARDS: gates (typecheck, lint, tests, format), per-rule counts, lint bypasses, file-wide disables, PR hygiene, test coverage by file, lockfile sanity. Markdown and JSON output with baseline diffing for CI.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit/tree/main/packages/audit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/audit"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "audit",
+    "lint",
+    "code-quality",
+    "scorecard",
+    "ci",
+    "legion"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": "./dist/cli.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cli": "./dist/cli.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/__tests__",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true}); require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "node ../../scripts/require-ci.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

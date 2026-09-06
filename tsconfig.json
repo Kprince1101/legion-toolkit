@@ -1,0 +1,12 @@
+{
+  "extends": "legion-tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"]
+  },
+  "include": ["scripts", "jest.config.mjs"]
+}

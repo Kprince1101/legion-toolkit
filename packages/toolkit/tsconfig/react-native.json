@@ -1,0 +1,3 @@
+{
+  "extends": "legion-tsconfig/react-native.json"
+}

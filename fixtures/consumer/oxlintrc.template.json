@@ -1,0 +1,10 @@
+{
+  "jsPlugins": ["legion-toolkit/eslint-plugin"],
+  "rules": {
+    "legion/no-narrative-comments": "error",
+    "legion/no-enum": "error",
+    "legion/no-function-keyword": "error",
+    "legion/guarded-context-hook": "error",
+    "no-ternary": "error"
+  }
+}

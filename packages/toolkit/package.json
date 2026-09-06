@@ -1,0 +1,108 @@
+{
+  "name": "legion-toolkit",
+  "version": "0.0.0",
+  "description": "One install for the whole Legion toolkit: the lint plugin, the audit CLI, the Prettier config and the TypeScript configs, each exposed as a subpath.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/toolkit"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "eslint",
+    "oxlint",
+    "prettier",
+    "tsconfig",
+    "audit",
+    "react",
+    "nextjs",
+    "legion"
+  ],
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "bin": {
+    "legion-audit": "./bin/legion-audit.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./eslint-plugin": {
+      "types": "./eslint-plugin.d.ts",
+      "default": "./eslint-plugin.js"
+    },
+    "./rules": {
+      "types": "./rules.d.ts",
+      "default": "./rules.js"
+    },
+    "./audit": {
+      "types": "./audit.d.ts",
+      "default": "./audit.js"
+    },
+    "./prettier": "./prettier.cjs",
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/next.json": "./tsconfig/next.json",
+    "./tsconfig/react-native.json": "./tsconfig/react-native.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "eslint-plugin.js",
+    "eslint-plugin.d.ts",
+    "rules.js",
+    "rules.d.ts",
+    "audit.js",
+    "audit.d.ts",
+    "prettier.cjs",
+    "tsconfig",
+    "bin",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "eslint-plugin-legion": "workspace:^",
+    "legion-audit": "workspace:^",
+    "legion-prettier-config": "workspace:^",
+    "legion-rules": "workspace:^",
+    "legion-tsconfig": "workspace:^"
+  },
+  "peerDependencies": {
+    "eslint": ">=9",
+    "oxlint": ">=1.53",
+    "prettier": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    },
+    "oxlint": {
+      "optional": true
+    },
+    "prettier": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts",
+    "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js",
+    "prepublishOnly": "node ../../scripts/require-ci.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

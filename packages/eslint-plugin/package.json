@@ -1,0 +1,73 @@
+{
+  "name": "eslint-plugin-legion",
+  "version": "0.0.0",
+  "description": "LEGION-STANDARDS as a lint plugin. Runs under oxlint (jsPlugins) and ESLint v9+. Zero comments, no React.FC, no enum, no ternaries, no function keyword, guarded context hooks, hydration-safe state, server-first pages, scoped lint bypasses.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit/tree/main/packages/eslint-plugin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "oxlint",
+    "oxlint-plugin",
+    "react",
+    "nextjs",
+    "react-native",
+    "legion"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/__tests__",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "legion-rules": "workspace:^"
+  },
+  "peerDependencies": {
+    "eslint": ">=9",
+    "oxlint": ">=1.53"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    },
+    "oxlint": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts && tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true}); require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "node ../../scripts/require-ci.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

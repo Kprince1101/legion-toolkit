@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2023"],
+    "noEmit": true,
+    "allowJs": true,
+    "paths": { "@/*": ["./*"] }
+  },
+  "exclude": ["node_modules", "ios", "android", ".expo"]
+}

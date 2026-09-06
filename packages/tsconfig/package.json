@@ -1,0 +1,43 @@
+{
+  "name": "legion-tsconfig",
+  "version": "0.0.0",
+  "description": "Shared strict TypeScript configs (base, node, next, react-native) for repos following LEGION-STANDARDS.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit/tree/main/packages/tsconfig#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/tsconfig"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "tsconfig",
+    "typescript",
+    "legion"
+  ],
+  "files": [
+    "base.json",
+    "node.json",
+    "next.json",
+    "react-native.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts",
+    "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "node -e \"for (const f of ['base','node','next','react-native']) JSON.parse(require('node:fs').readFileSync(f + '.json', 'utf8'))\"",
+    "prepublishOnly": "node ../../scripts/require-ci.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

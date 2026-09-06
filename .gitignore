@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+*.tsbuildinfo
+AUDIT.md
+audit.json
+.DS_Store
+fixtures/.oxlintrc.json
+.fixtures-*.oxlintrc.json
+packages/*/LICENSE

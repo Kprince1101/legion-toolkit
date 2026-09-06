@@ -1,0 +1,48 @@
+{
+  "name": "legion-prettier-config",
+  "version": "0.0.0",
+  "description": "Prettier config for repos following LEGION-STANDARDS: single quotes, trailing commas, 80 columns.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit/tree/main/packages/prettier-config#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/prettier-config"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "prettier",
+    "prettier-config",
+    "legion"
+  ],
+  "type": "module",
+  "main": "./index.json",
+  "exports": {
+    ".": "./index.json"
+  },
+  "files": [
+    "index.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "prettier": ">=3"
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts",
+    "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "node -e \"JSON.parse(require('node:fs').readFileSync('index.json', 'utf8'))\"",
+    "prepublishOnly": "node ../../scripts/require-ci.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

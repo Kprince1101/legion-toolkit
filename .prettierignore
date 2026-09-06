@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.yarn
+yarn.lock
+CHANGELOG.md
+fixtures
+AUDIT.md
+audit.json
+.oxlintrc.json
+fixtures/.oxlintrc.json
+.fixtures-*.oxlintrc.json

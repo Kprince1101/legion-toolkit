@@ -1,0 +1,12 @@
+{
+  "name": "legion-consumer-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "prettier": "legion-toolkit/prettier",
+  "scripts": {
+    "lint": "legion-audit directives && oxlint .",
+    "lint:eslint": "eslint .",
+    "audit": "legion-audit --no-deps-audit --no-tests --md AUDIT.md --json audit.json --fail-on never"
+  }
+}
