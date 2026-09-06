@@ -1,3 +1,4 @@
+import { ruleCoverageAdvice } from './index.js';
 import { toolchainAdvice, yarnMigrationSteps } from './toolchain.js';
 import type { ExpoDoctorResult, LockfileResult, Toolchain } from '../types.js';
 
@@ -69,6 +70,44 @@ describe('yarnMigrationSteps', () => {
     expect(steps).toContain(
       'rm -rf node_modules package-lock.json pnpm-lock.yaml',
     );
+  });
+});
+
+describe('ruleCoverageAdvice', () => {
+  it('names the rules an explicit config never picked up', () => {
+    const advice = ruleCoverageAdvice({
+      status: 'checked',
+      available: ['no-enum', 'button-has-type', 'no-hardcoded-hex'],
+      configured: ['no-enum'],
+      unconfigured: ['button-has-type', 'no-hardcoded-hex'],
+      source: 'oxlint',
+    });
+    expect(advice?.title).toContain('1 of 3');
+    expect(advice?.detail).toContain('button-has-type');
+  });
+
+  it('says nothing when the config already covers every rule', () => {
+    expect(
+      ruleCoverageAdvice({
+        status: 'checked',
+        available: ['no-enum'],
+        configured: ['no-enum'],
+        unconfigured: [],
+        source: 'oxlint',
+      }),
+    ).toBeNull();
+  });
+
+  it('says nothing when it could not read a config at all', () => {
+    expect(
+      ruleCoverageAdvice({
+        status: 'skipped',
+        available: [],
+        configured: [],
+        unconfigured: [],
+        source: 'none',
+      }),
+    ).toBeNull();
   });
 });
 

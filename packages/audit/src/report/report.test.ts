@@ -35,6 +35,7 @@ const base = (): AuditResult => ({
     withPr: 80,
     ratio: 1,
     lastPrCommit: 'abc (#1)',
+    forge: 'github',
   },
   testCoverage: {
     components: 4,
@@ -71,6 +72,13 @@ const base = (): AuditResult => ({
     installed: false,
   },
   workspace: { root: '/repo', workspaceRoot: '/repo', isPackage: false },
+  ruleCoverage: {
+    status: 'skipped',
+    available: [],
+    configured: [],
+    unconfigured: [],
+    source: 'none',
+  },
   advice: [],
 });
 
@@ -109,6 +117,7 @@ describe('computeScore', () => {
       withPr: 8,
       ratio: 0.1,
       lastPrCommit: null,
+      forge: 'github',
     };
     result.testCoverage.missing = [
       { file: 'components/X.tsx', kind: 'component' },
@@ -137,6 +146,7 @@ describe('computeScore', () => {
       withPr: 2,
       ratio: 0.045,
       lastPrCommit: null,
+      forge: 'github',
     };
     expect(computeScore(result)).toBe(clean);
   });

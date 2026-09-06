@@ -75,8 +75,8 @@ const auditFor = (args: CliArgs, overrides: Partial<AuditOptions> = {}) =>
     ...overrides,
   });
 
-const runAdvice = (args: CliArgs): number => {
-  const result = auditFor(args, {
+const runAdvice = async (args: CliArgs): Promise<number> => {
+  const result = await auditFor(args, {
     depsAudit: false,
     runTests: false,
     runFormat: false,
@@ -86,8 +86,8 @@ const runAdvice = (args: CliArgs): number => {
   return 0;
 };
 
-const runFull = (args: CliArgs): number => {
-  const result = auditFor(args);
+const runFull = async (args: CliArgs): Promise<number> => {
+  const result = await auditFor(args);
   let regressions: Regression[] | null = null;
   if (args.baseline)
     regressions = findRegressions(readBaseline(args.baseline), result);
@@ -103,7 +103,7 @@ const runFull = (args: CliArgs): number => {
   return exitCodeFor(effectiveFailOn(args), result, regressions);
 };
 
-const main = (): number => {
+const main = async (): Promise<number> => {
   let args: CliArgs;
   try {
     args = parseArgs(process.argv.slice(2));
@@ -121,4 +121,4 @@ const main = (): number => {
   return runFull(args);
 };
 
-process.exitCode = main();
+process.exitCode = await main();

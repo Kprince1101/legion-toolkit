@@ -170,6 +170,7 @@ expectFinding(report, 'legion/no-enum');
 expectFinding(report, '## Gates');
 expectFinding(report, '## Toolchain');
 expectFinding(report, '## Nudges');
+expectFinding(report, 'Legion rules are configured');
 if (!existsSync(join(app, 'audit.json'))) {
   console.error('audit.json was not written');
   process.exit(1);

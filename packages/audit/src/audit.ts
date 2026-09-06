@@ -12,8 +12,10 @@ import { runLint } from './checks/lint.js';
 import { expoDoctorGate } from './checks/expo.js';
 import { lockfileCheck } from './checks/lockfile.js';
 import { testCoverage } from './checks/test-coverage.js';
+import { ruleCoverage } from './checks/rule-coverage.js';
 import { detectToolchain } from './checks/toolchain.js';
 import { workspaceContext } from './workspace.js';
+import { listSourceFiles } from './files.js';
 import { computeScore } from './report/score.js';
 import type {
   AuditOptions,
@@ -54,7 +56,16 @@ const loggerFor = (options: AuditOptions): Logger => {
   return (message) => console.error(message);
 };
 
-export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
+export const probeFile = (root: string, ignore: string[]): string | null => {
+  const files = listSourceFiles(root, ignore);
+  const preferred = files.find((file) => file.endsWith('.tsx'));
+  if (preferred) return preferred;
+  return files[0] ?? null;
+};
+
+export const runAudit = async (
+  partial: Partial<AuditOptions> = {},
+): Promise<AuditResult> => {
   const options: AuditOptions = { ...DEFAULT_OPTIONS, ...partial };
   const root = resolve(options.root);
   const log = loggerFor(options);
@@ -102,6 +113,11 @@ export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
   const coverage = testCoverage(root, options.ignore);
   log('legion-audit: toolchain');
   const toolchain = detectToolchain(root, packageManager, workspace);
+  log('legion-audit: rule coverage');
+  const coverageOfRules = await ruleCoverage(
+    root,
+    probeFile(root, options.ignore),
+  );
 
   const partialResult = {
     root,
@@ -115,6 +131,7 @@ export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
     toolchain,
     expo,
     workspace,
+    ruleCoverage: coverageOfRules,
   };
 
   return {

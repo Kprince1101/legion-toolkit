@@ -54,12 +54,23 @@ export interface DirectivesResult {
   byRule: Record<string, number>;
 }
 
+export type Forge = 'github' | 'gitlab' | 'bitbucket' | 'azure' | 'unknown';
+
 export interface PrHygiene {
   status: GateStatus;
   inspected: number;
   withPr: number;
   ratio: number;
   lastPrCommit: string | null;
+  forge: Forge;
+}
+
+export interface RuleCoverage {
+  status: 'checked' | 'skipped';
+  available: string[];
+  configured: string[];
+  unconfigured: string[];
+  source: 'oxlint' | 'eslint' | 'none';
 }
 
 export interface MissingTest {
@@ -159,6 +170,7 @@ export interface AuditResult {
   lockfile: LockfileResult;
   toolchain: Toolchain;
   expo: ExpoDoctorResult;
+  ruleCoverage: RuleCoverage;
   workspace: WorkspaceContext;
   advice: Advice[];
 }

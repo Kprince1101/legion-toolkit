@@ -26,6 +26,20 @@ export {
 } from './checks/expo.js';
 export type { DoctorVerdict } from './checks/expo.js';
 export { detectToolchain, yarnFlavorFrom } from './checks/toolchain.js';
+export {
+  detectForge,
+  forgeFromRemote,
+  forgeLabel,
+  forgePattern,
+  forgeFix,
+} from './checks/forge.js';
+export {
+  ruleCoverage,
+  availableRules,
+  configuredFromOxlint,
+  configuredFromEslint,
+  summarizeCoverage,
+} from './checks/rule-coverage.js';
 export { findWorkspaceRoot, workspaceContext, ancestors } from './workspace.js';
 export {
   buildAdvice,
@@ -34,6 +48,7 @@ export {
   testAdvice,
   bypassAdvice,
   prAdvice,
+  ruleCoverageAdvice,
   yarnMigrationSteps,
   RULE_LESSONS,
   TARGET_YARN,
