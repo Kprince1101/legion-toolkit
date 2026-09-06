@@ -50,7 +50,6 @@ const rule: LegionRuleModule = {
       description:
         'Never read window, document, localStorage, sessionStorage or navigator inside a useState initializer in code that server-renders. Initialize from a server-safe value and reconcile in useEffect.',
       standard: 'LEGION-STANDARDS section 1 (hydration-safe initialization)',
-      grade: 'A',
     },
     schema: [],
     messages: {

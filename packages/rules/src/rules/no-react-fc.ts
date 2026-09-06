@@ -29,7 +29,6 @@ const rule: LegionRuleModule = {
       description:
         'Never React.FC. Declare a component as `export const Name = (props: NameProps) => ...` with a named props interface.',
       standard: 'LEGION-STANDARDS section 0.4, 2',
-      grade: 'A',
     },
     schema: [],
     messages: {

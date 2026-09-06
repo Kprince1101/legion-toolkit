@@ -82,10 +82,10 @@ operating on the ESTree/TSESTree AST, exported individually and as a map.
 Nothing here imports ESLint or oxlint; it only uses the `context` API that
 both provide.
 
-Rules are grouped by how confident they are. Grade A rules are mechanical
-with no realistic false positives. Grade B rules are heuristics for the
-harder standards. Which level each runs at is a property of the config,
-not the rule (see Tolerance levels).
+Every rule ships. Some are mechanical with no realistic false positives,
+some are heuristics for the harder standards; the difference is a note in
+the rule's docs, not a tier. Which level each runs at is a property of the
+config, not the rule (see Tolerance levels).
 
 ### Tolerance levels
 
@@ -115,10 +115,11 @@ and exits non-zero on any. The recommended `lint` script is
 `defineLegionConfig({ 'no-narrative-comments': 3, 'no-enum': 3,
 'presentational-components': 1 })` emits the flat config or `.oxlintrc.json`
 rules plus the `locked` list. Raw linter config still works for anyone who
-prefers it. Defaults: `recommended` runs grade A at 2 and grade B at 1;
-`strict` runs grade A at 3 and grade B at 2.
+prefers it. Defaults: `recommended` runs every rule at 2 (`no-disables` off);
+`strict` runs every rule at 3 (`no-disables` at 1). There is no grading of
+rules: all of them ship, and the level is the only knob.
 
-### Grade A rules (tomorrow)
+### Mechanical rules
 
 | Rule                              | Standard                      | What it flags                                                                                                                                                                                                                                                                    |
 | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -190,7 +191,7 @@ shareable config sets core `max-lines` to
 `skipBlankLines` and `skipComments` (pedantic category, off by default, so
 the config must enable it explicitly). The equivalence test covers it.
 
-### Grade B rules (day two, after grade A has run on real repos)
+### Heuristic rules (shipped day one with the rest; tune on real repos)
 
 | Rule                           | Standard          | Heuristic                                                                                                                                                                                                                           |
 | ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -611,7 +612,7 @@ without review.
   first audit. Test it against a bare `create-next-app` output, against
   commander (existing ESLint config to merge into), and with `--yes` from
   a script.
-- Grade B rules, run on commander and howdy, tune the heuristics on real
+- The heuristic rules, run on commander and howdy, tune them on real
   hits before raising any above level 1 in `recommended`.
 - Retire howdy's `eslint-rules/legion-rules.mjs` and legion-core's
   `scripts/check-legion-rules.mjs` in favor of the package. Two PRs, one

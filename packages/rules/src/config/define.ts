@@ -2,6 +2,8 @@ import type { Level } from '../types.js';
 import type { LegionRuleName } from '../rules/index.js';
 import { RULE_NAMES } from '../rules/index.js';
 import type { NoNarrativeCommentsOptions } from '../rules/no-narrative-comments.js';
+import type { PresentationalComponentsOptions } from '../rules/presentational-components.js';
+import type { NoAdminClientInBrowserOptions } from '../rules/no-admin-client-in-browser.js';
 import { isLocked, ruleEntry } from './levels.js';
 import type { RuleEntry } from './levels.js';
 
@@ -14,6 +16,8 @@ export interface LegionConfigInput {
   componentFiles?: string[];
   testFiles?: string[];
   comments?: NoNarrativeCommentsOptions;
+  components?: PresentationalComponentsOptions;
+  adminClient?: NoAdminClientInBrowserOptions;
 }
 
 export interface OxlintOverride {
@@ -88,6 +92,8 @@ const optionsFor = (
 ): unknown => {
   if (name === 'no-narrative-comments') return input.comments ?? {};
   if (name === 'scoped-disables') return { locked };
+  if (name === 'presentational-components') return input.components ?? {};
+  if (name === 'no-admin-client-in-browser') return input.adminClient ?? {};
   return undefined;
 };
 

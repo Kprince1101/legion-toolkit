@@ -6,11 +6,14 @@ oxlint's `jsPlugins` runs ESLint plugins as-is, so the same rules with the
 same diagnostics run under either. CI on this repo proves the two agree on
 every fixture.
 
-What it enforces: zero comments, no `React.FC`, no `enum`, no ternaries, no
-`function` keyword, guarded context hooks, hydration-safe `useState`,
-server-first `page`/`layout` files, a 180-line component cap, `any` only on
-declared boundary paths, and lint bypasses that are scoped, named, explained,
-and impossible for locked rules. See
+What it enforces: components that render and never think (no state,
+effects, fetching, handler bodies or projections in a component), zero
+comments, no `React.FC`, no `enum`, no ternaries, no `function` keyword,
+guarded context hooks, hydration-safe `useState`, server-first
+`page`/`layout` files, request state as one tagged union, no literal
+conditions in JSX, no service-role client in browser code, a 180-line
+component cap, `any` only on declared boundary paths, and lint bypasses
+that are scoped, named, explained, and impossible for locked rules. See
 [`legion-rules`](https://www.npmjs.com/package/legion-rules) for the rule
 table and the tolerance levels.
 

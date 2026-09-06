@@ -38,7 +38,6 @@ const rule: LegionRuleModule = {
       description:
         'Server-first. A page.tsx or layout.tsx under app/ fetches in a server component and hands props to one client child; it is never itself "use client".',
       standard: 'LEGION-STANDARDS section 0.6, 3',
-      grade: 'A',
     },
     schema: [],
     messages: {

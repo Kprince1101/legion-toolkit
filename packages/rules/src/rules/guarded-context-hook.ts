@@ -17,7 +17,6 @@ const rule: LegionRuleModule = {
       description:
         'Consume Context only through a hook named use* whose body throws when the value is missing. Never a raw useContext anywhere else.',
       standard: 'LEGION-STANDARDS section 0.5, 4',
-      grade: 'A',
     },
     schema: [],
     messages: {

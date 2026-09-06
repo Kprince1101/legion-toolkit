@@ -23,7 +23,6 @@ const rule: LegionRuleModule = {
       description:
         'A lint bypass must be a next-line directive that names its rules and explains itself after "--". Rules at tolerance 3 are locked and cannot be bypassed at all.',
       standard: 'LEGION-STANDARDS section 13, REACT-PARTNERSHIP',
-      grade: 'A',
     },
     schema: [
       {

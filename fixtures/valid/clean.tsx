@@ -53,3 +53,33 @@ export const getErrorMessage = (err: unknown): string => {
 };
 
 export const isReady = (value: string | undefined) => value ?? 'pending';
+
+type RequestState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: string }
+  | { status: 'error'; message: string };
+
+export const useSaveDraft = () => {
+  const [request, setRequest] = useState<RequestState>({ status: 'idle' });
+  const handleSave = () => setRequest({ status: 'loading' });
+  return { request, handleSave };
+};
+
+interface BadgeProps {
+  showDemo: boolean;
+  isMuted: boolean;
+  items: string[];
+}
+
+export const Badge = ({ showDemo, isMuted, items }: BadgeProps) => (
+  <div>
+    {showDemo && <span>demo</span>}
+    <em className={isMuted && 'muted'}>{items.length}</em>
+    <ul>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  </div>
+);

@@ -23,7 +23,6 @@ const rule: LegionRuleModule = {
       description:
         'Reports every lint directive so that honored bypasses stay visible in lint output. Run at tolerance 1 to see them as warnings.',
       standard: 'REACT-PARTNERSHIP',
-      grade: 'A',
     },
     schema: [],
     messages: {

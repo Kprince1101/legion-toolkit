@@ -51,7 +51,6 @@ const rule: LegionRuleModule = {
       description:
         'Zero comments. The only comments allowed are tool directives (lint and type suppressions, test-runner pragmas, bundler magic comments).',
       standard: 'LEGION-STANDARDS section 13',
-      grade: 'A',
     },
     schema: [
       {

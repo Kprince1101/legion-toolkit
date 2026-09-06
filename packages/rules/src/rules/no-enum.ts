@@ -10,7 +10,6 @@ const rule: LegionRuleModule = {
       description:
         'Never enum. Use a string-literal union type, and a Record lookup when values need mapping.',
       standard: 'LEGION-STANDARDS section 0.4, 2',
-      grade: 'A',
     },
     schema: [],
     messages: {

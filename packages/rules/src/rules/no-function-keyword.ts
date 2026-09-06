@@ -34,7 +34,6 @@ const rule: LegionRuleModule = {
       description:
         'Never the function keyword. Components, hooks, handlers and helpers are const arrow functions.',
       standard: 'LEGION-STANDARDS section 0.4, 7',
-      grade: 'A',
     },
     schema: [],
     messages: {

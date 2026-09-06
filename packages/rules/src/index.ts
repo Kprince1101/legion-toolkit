@@ -31,5 +31,7 @@ export {
 } from './rules/no-narrative-comments.js';
 export type { NoNarrativeCommentsOptions } from './rules/no-narrative-comments.js';
 export type { ScopedDisablesOptions } from './rules/scoped-disables.js';
+export type { PresentationalComponentsOptions } from './rules/presentational-components.js';
+export type { NoAdminClientInBrowserOptions } from './rules/no-admin-client-in-browser.js';
 export { isAppRouteFile } from './rules/no-use-client-in-page.js';
 export type { Level, Severity, LegionRuleModule } from './types.js';

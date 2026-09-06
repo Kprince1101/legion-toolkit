@@ -14,7 +14,6 @@ export type Listeners = Record<string, Listener>;
 export interface RuleDocs {
   description: string;
   standard: string;
-  grade: 'A' | 'B';
 }
 
 export interface LegionRuleModule {
