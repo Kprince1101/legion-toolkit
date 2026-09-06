@@ -1,6 +1,6 @@
 {
   "name": "legion-prettier-config",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Prettier config for repos following LEGION-STANDARDS: single quotes, trailing commas, 80 columns.",
   "license": "MIT",
   "author": "Veracium LLC",

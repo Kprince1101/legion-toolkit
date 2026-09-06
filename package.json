@@ -27,7 +27,6 @@
     "validate": "yarn build && yarn typecheck && yarn check:oxlintrc && yarn lint && yarn format:check && yarn check:umbrella && yarn check:metadata && yarn test:ci"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "1.0.1",
     "@changesets/cli": "3.0.2",
     "@swc/core": "^1.15.0",
     "@swc/jest": "0.2.39",
