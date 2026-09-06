@@ -9,6 +9,7 @@ export default {
     '^legion-rules$': '<rootDir>/packages/rules/src/index.ts',
     '^eslint-plugin-legion$': '<rootDir>/packages/eslint-plugin/src/index.ts',
     '^legion-audit$': '<rootDir>/packages/audit/src/index.ts',
+    '^legion-init$': '<rootDir>/packages/init/src/index.ts',
   },
   transform: {
     '^.+\\.ts$': [

@@ -27,7 +27,8 @@
   "main": "./index.js",
   "types": "./index.d.ts",
   "bin": {
-    "legion-audit": "./bin/legion-audit.js"
+    "legion-audit": "./bin/legion-audit.js",
+    "legion-toolkit": "./bin/legion-toolkit.js"
   },
   "exports": {
     ".": {
@@ -51,7 +52,10 @@
     "./tsconfig/node.json": "./tsconfig/node.json",
     "./tsconfig/next.json": "./tsconfig/next.json",
     "./tsconfig/react-native.json": "./tsconfig/react-native.json",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./presets/recommended.json": "./presets/recommended.json",
+    "./presets/strict.json": "./presets/strict.json",
+    "./presets/react-native.json": "./presets/react-native.json"
   },
   "files": [
     "index.js",
@@ -63,6 +67,7 @@
     "audit.js",
     "audit.d.ts",
     "prettier.cjs",
+    "presets",
     "tsconfig",
     "bin",
     "LICENSE",
@@ -76,6 +81,7 @@
   "dependencies": {
     "eslint-plugin-legion": "workspace:^",
     "legion-audit": "workspace:^",
+    "legion-init": "workspace:^",
     "legion-prettier-config": "workspace:^",
     "legion-rules": "workspace:^",
     "legion-tsconfig": "workspace:^"
@@ -97,9 +103,9 @@
     }
   },
   "scripts": {
-    "build": "node ../../scripts/copy-license.ts",
-    "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true})\"",
-    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js",
+    "build": "node ../../scripts/generate-presets.ts && node ../../scripts/copy-license.ts",
+    "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true}); require('node:fs').rmSync('presets',{recursive:true,force:true})\"",
+    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js && node --check bin/legion-toolkit.js",
     "prepublishOnly": "node ../../scripts/require-ci.ts"
   },
   "engines": {

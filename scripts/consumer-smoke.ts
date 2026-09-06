@@ -175,7 +175,32 @@ if (!existsSync(join(app, 'audit.json'))) {
   console.error('audit.json was not written');
   process.exit(1);
 }
+renameSync(join(app, '.oxlintrc.json'), join(app, '.oxlintrc.backup.json'));
+const initBin = join(app, 'node_modules', '.bin', 'legion-toolkit');
+const init = sh(initBin, ['init', '--yes', '--linter', 'oxlint'], app, true);
+if (init.status !== 0) {
+  console.error(`legion-toolkit init failed under ${manager}:`);
+  console.error(init.stdout);
+  console.error(init.stderr);
+  process.exit(1);
+}
+const generated = readFileSync(join(app, '.oxlintrc.json'), 'utf8');
+if (!generated.includes('legion-toolkit/presets/recommended.json')) {
+  console.error(
+    `init did not write an extends to the shipped preset:\n${generated}`,
+  );
+  process.exit(1);
+}
+const afterInit = sh(
+  join(app, 'node_modules', '.bin', 'oxlint'),
+  ['.'],
+  app,
+  true,
+);
+expectFinding(afterInit.stdout + afterInit.stderr, 'no-enum');
+expectFinding(afterInit.stdout + afterInit.stderr, 'no-function-keyword');
+
 console.log(
-  `consumer smoke under ${manager}: plugin ran under oxlint and ESLint, the reactNative preset caught the admin client in a plain lib file, legion-audit wrote a report`,
+  `consumer smoke under ${manager}: plugin ran under oxlint and ESLint, the reactNative preset caught the admin client in a plain lib file, legion-audit wrote a report, and legion-toolkit init produced a config that extends the shipped preset and still catches violations`,
 );
 rmSync(work, { recursive: true, force: true });

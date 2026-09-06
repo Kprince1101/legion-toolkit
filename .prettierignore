@@ -10,3 +10,4 @@ audit.json
 .oxlintrc.json
 fixtures/.oxlintrc.json
 .fixtures-*.oxlintrc.json
+packages/toolkit/presets/

@@ -3691,6 +3691,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"legion-init@workspace:*, legion-init@workspace:^, legion-init@workspace:packages/init":
+  version: 0.0.0-use.local
+  resolution: "legion-init@workspace:packages/init"
+  dependencies:
+    legion-audit: "workspace:^"
+  bin:
+    legion-init: ./dist/cli.js
+  languageName: unknown
+  linkType: soft
+
 "legion-prettier-config@workspace:^, legion-prettier-config@workspace:packages/prettier-config":
   version: 0.0.0-use.local
   resolution: "legion-prettier-config@workspace:packages/prettier-config"
@@ -3720,6 +3730,7 @@ __metadata:
     eslint: "npm:10.10.0"
     jest: "npm:30.5.1"
     legion-audit: "workspace:*"
+    legion-init: "workspace:*"
     legion-rules: "workspace:*"
     oxlint: "npm:1.81.0"
     prettier: "npm:3.9.6"
@@ -3733,6 +3744,7 @@ __metadata:
   dependencies:
     eslint-plugin-legion: "workspace:^"
     legion-audit: "workspace:^"
+    legion-init: "workspace:^"
     legion-prettier-config: "workspace:^"
     legion-rules: "workspace:^"
     legion-tsconfig: "workspace:^"
@@ -3749,6 +3761,7 @@ __metadata:
       optional: true
   bin:
     legion-audit: ./bin/legion-audit.js
+    legion-toolkit: ./bin/legion-toolkit.js
   languageName: unknown
   linkType: soft
 
