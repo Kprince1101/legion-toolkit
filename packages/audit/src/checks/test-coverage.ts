@@ -1,10 +1,17 @@
+import { readFileSync } from 'node:fs';
 import {
   baseName,
   listSourceFiles,
   stripExtension,
   toPosix,
 } from '../files.js';
-import type { MissingTest, TestCoverage } from '../types.js';
+import { NO_COVERAGE_REPORT, readCoverageReport } from './coverage-report.js';
+import type {
+  CoverageReport,
+  CoverageSource,
+  MissingTest,
+  TestCoverage,
+} from '../types.js';
 
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 
@@ -48,7 +55,38 @@ const isHookFile = (file: string): boolean => {
   return /^use[A-Z0-9]/.test(name);
 };
 
-export const classify = (files: string[]): TestCoverage => {
+const IMPORT_PATTERN = /(?:from|require\()\s*['"]([^'"]+)['"]/g;
+const DESCRIBE_PATTERN = /\bdescribe\s*\(\s*['"`]([^'"`]+)/g;
+const IDENTIFIER_HEAD = /^[A-Za-z][A-Za-z0-9_]*/;
+
+export const coveredNames = (source: string): string[] => {
+  const names = new Set<string>();
+  for (const match of source.matchAll(IMPORT_PATTERN)) {
+    const specifier = match[1] ?? '';
+    if (!specifier.startsWith('.') && !specifier.startsWith('@/')) continue;
+    names.add(stripExtension(baseName(specifier)));
+  }
+  for (const match of source.matchAll(DESCRIBE_PATTERN)) {
+    const head = IDENTIFIER_HEAD.exec((match[1] ?? '').trim());
+    if (head) names.add(head[0]);
+  }
+  return [...names];
+};
+
+const sourceFor = (
+  report: CoverageReport,
+  covered: Record<string, string[]>,
+): CoverageSource => {
+  if (report.available) return 'coverage-report';
+  if (Object.keys(covered).length > 0) return 'references';
+  return 'filenames';
+};
+
+export const classify = (
+  files: string[],
+  covered: Record<string, string[]> = {},
+  report: CoverageReport = NO_COVERAGE_REPORT,
+): TestCoverage => {
   const tested = new Set<string>();
   const candidates: MissingTest[] = [];
   let components = 0;
@@ -56,6 +94,7 @@ export const classify = (files: string[]): TestCoverage => {
   for (const file of files) {
     if (isTestFile(file)) {
       tested.add(testBaseName(file));
+      for (const name of covered[file] ?? []) tested.add(name);
       continue;
     }
     if (isComponentFile(file)) {
@@ -68,14 +107,45 @@ export const classify = (files: string[]): TestCoverage => {
       candidates.push({ file, kind: 'hook' });
     }
   }
-  const missing = candidates.filter(
-    (candidate) => !tested.has(stripExtension(baseName(candidate.file))),
-  );
-  return { components, hooks, missing };
+  const isTested = (file: string): boolean => {
+    if (report.available) return report.files[file] === true;
+    return tested.has(stripExtension(baseName(file)));
+  };
+  const missing = candidates.filter((candidate) => !isTested(candidate.file));
+  return {
+    components,
+    hooks,
+    missing,
+    source: sourceFor(report, covered),
+    totalPct: report.totalPct,
+  };
+};
+
+const readCoveredNames = (
+  root: string,
+  files: string[],
+): Record<string, string[]> => {
+  const covered: Record<string, string[]> = {};
+  for (const file of files) {
+    const relative = toPosix(root, file);
+    if (!isTestFile(relative)) continue;
+    try {
+      covered[relative] = coveredNames(readFileSync(file, 'utf8'));
+    } catch {
+      covered[relative] = [];
+    }
+  }
+  return covered;
 };
 
 export const testCoverage = (
   root: string,
   ignore: string[] = [],
-): TestCoverage =>
-  classify(listSourceFiles(root, ignore).map((file) => toPosix(root, file)));
+): TestCoverage => {
+  const files = listSourceFiles(root, ignore);
+  return classify(
+    files.map((file) => toPosix(root, file)),
+    readCoveredNames(root, files),
+    readCoverageReport(root),
+  );
+};

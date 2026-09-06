@@ -6,8 +6,9 @@ import type { CliArgs, FailOn } from './args.js';
 import { runAudit } from './audit.js';
 import { scanDirectives } from './checks/directives.js';
 import { findRegressions } from './report/baseline.js';
+import { renderConsole } from './report/console.js';
 import { renderMarkdown } from './report/markdown.js';
-import type { AuditResult, Regression } from './types.js';
+import type { AuditOptions, AuditResult, Regression } from './types.js';
 
 const readBaseline = (file: string): AuditResult =>
   JSON.parse(readFileSync(resolve(file), 'utf8')) as AuditResult;
@@ -61,16 +62,32 @@ const runDirectives = (args: CliArgs): number => {
   return 1;
 };
 
-const runFull = (args: CliArgs): number => {
-  const result = runAudit({
+const auditFor = (args: CliArgs, overrides: Partial<AuditOptions> = {}) =>
+  runAudit({
     root: args.root,
     depsAudit: args.depsAudit,
     runTests: args.runTests,
     runTypecheck: args.runTypecheck,
     runFormat: args.runFormat,
+    runExpoDoctor: args.runExpoDoctor,
     quiet: args.quiet,
     ignore: args.ignore,
+    ...overrides,
   });
+
+const runAdvice = (args: CliArgs): number => {
+  const result = auditFor(args, {
+    depsAudit: false,
+    runTests: false,
+    runFormat: false,
+    runTypecheck: false,
+  });
+  console.log(renderConsole(result));
+  return 0;
+};
+
+const runFull = (args: CliArgs): number => {
+  const result = auditFor(args);
   let regressions: Regression[] | null = null;
   if (args.baseline)
     regressions = findRegressions(readBaseline(args.baseline), result);
@@ -79,10 +96,9 @@ const runFull = (args: CliArgs): number => {
   else console.log(markdown);
   if (args.json)
     writeFileSync(resolve(args.json), `${JSON.stringify(result, null, 2)}\n`);
+  if (!args.quiet) console.error(renderConsole(result));
   if (args.md && !args.quiet) {
-    console.error(
-      `legion-audit: score ${result.score}/100, report written to ${args.md}`,
-    );
+    console.error(`legion-audit: report written to ${args.md}`);
   }
   return exitCodeFor(effectiveFailOn(args), result, regressions);
 };
@@ -101,6 +117,7 @@ const main = (): number => {
     return 0;
   }
   if (args.command === 'directives') return runDirectives(args);
+  if (args.command === 'advice') return runAdvice(args);
   return runFull(args);
 };
 

@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { buildAdvice } from './advice/index.js';
 import { scanDirectives } from './checks/directives.js';
 import {
   depsAuditGate,
@@ -8,10 +9,31 @@ import {
 } from './checks/gates.js';
 import { prHygiene } from './checks/git.js';
 import { runLint } from './checks/lint.js';
+import { expoDoctorGate } from './checks/expo.js';
 import { lockfileCheck } from './checks/lockfile.js';
 import { testCoverage } from './checks/test-coverage.js';
+import { detectToolchain } from './checks/toolchain.js';
+import { workspaceContext } from './workspace.js';
 import { computeScore } from './report/score.js';
-import type { AuditOptions, AuditResult, GateResult } from './types.js';
+import type {
+  AuditOptions,
+  AuditResult,
+  ExpoDoctorResult,
+  GateResult,
+} from './types.js';
+
+const SKIPPED_EXPO: ExpoDoctorResult = {
+  name: 'expo-doctor',
+  status: 'skipped',
+  summary: 'skipped by flag',
+  patchDrift: [],
+  installed: false,
+};
+
+const runExpo = (options: AuditOptions, root: string): ExpoDoctorResult => {
+  if (!options.runExpoDoctor) return SKIPPED_EXPO;
+  return expoDoctorGate(root);
+};
 
 export const DEFAULT_OPTIONS: AuditOptions = {
   root: process.cwd(),
@@ -19,6 +41,7 @@ export const DEFAULT_OPTIONS: AuditOptions = {
   runTests: true,
   runTypecheck: true,
   runFormat: true,
+  runExpoDoctor: true,
   quiet: false,
   commitsToInspect: 80,
   ignore: [],
@@ -37,7 +60,8 @@ export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
   const log = loggerFor(options);
 
   log('legion-audit: lockfile');
-  const lockfile = lockfileCheck(root);
+  const workspace = workspaceContext(root);
+  const lockfile = lockfileCheck(workspace.workspaceRoot);
   const { packageManager } = lockfile;
 
   const gates: GateResult[] = [];
@@ -66,6 +90,9 @@ export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
     log('legion-audit: dependency audit');
     gates.push(depsAuditGate(root, packageManager));
   }
+  log('legion-audit: expo');
+  const expo = runExpo(options, root);
+  if (expo.status !== 'skipped') gates.push(expo);
 
   log('legion-audit: directives');
   const directives = scanDirectives(root, options.ignore);
@@ -73,6 +100,8 @@ export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
   const hygiene = prHygiene(root, options.commitsToInspect);
   log('legion-audit: tests by file');
   const coverage = testCoverage(root, options.ignore);
+  log('legion-audit: toolchain');
+  const toolchain = detectToolchain(root, packageManager, workspace);
 
   const partialResult = {
     root,
@@ -83,12 +112,16 @@ export const runAudit = (partial: Partial<AuditOptions> = {}): AuditResult => {
     prHygiene: hygiene,
     testCoverage: coverage,
     lockfile,
+    toolchain,
+    expo,
+    workspace,
   };
 
   return {
     schema: 1,
     generatedAt: new Date().toISOString(),
     score: computeScore(partialResult),
+    advice: buildAdvice(partialResult),
     ...partialResult,
   };
 };

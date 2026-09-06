@@ -25,10 +25,35 @@ yarn legion-audit --md AUDIT.md --json audit.json
 | lint bypasses      | every `eslint-disable` / `oxlint-disable` directive and `NOSONAR`, counted per rule   |
 | file-wide disables | a bare `/* eslint-disable */` or `/* oxlint-disable */`; always a hard fail           |
 | PR hygiene         | share of the last 80 commits whose subject carries a `(#123)` PR number               |
-| tests by file      | components (`components/**`, `app/**`) and `use*` hooks without a matching test file  |
-| lockfile           | exactly one lockfile at the root                                                      |
+| expo-doctor        | `expo-doctor` on an Expo project; patch-level drift is a nudge, not a failure         |
+| test coverage      | the coverage report when there is one, otherwise what the test files actually import  |
+| lockfile           | exactly one lockfile, found at the workspace root when this is a monorepo package     |
+| toolchain          | package manager and Yarn flavor, framework, whether the plugin is actually wired in   |
 
 A tool that is not installed reports `skipped`, never `pass`.
+
+### Test coverage, in order of preference
+
+The question is which components and hooks are actually exercised, and there
+are three ways to answer it. The audit uses the best one available and says
+which in the report:
+
+1. **`coverage/coverage-summary.json`** if it exists. Real per-file line
+   coverage, which is a measurement rather than a guess. Run the suite once
+   with `--coverage --coverageReporters=json-summary` to get it.
+2. **What the test files import and `describe`.** One file covering thirteen
+   components counts for all thirteen. Group your tests however reads best;
+   the audit is not a reason to split them.
+3. **Matching base names**, only when there is nothing better to go on.
+
+### expo-doctor
+
+On an Expo project the doctor runs as a gate, but not every doctor failure is
+equal. A wrong major or minor against the installed SDK breaks builds and
+fails the gate. A newer patch existing does not break anything, and Expo
+ships patches faster than a project can consume them, so that is reported as
+a nudge with the exact `expo install --fix` to run. A gate that goes red for
+something unrelated to your code is a gate people learn to ignore.
 
 ## Output
 
@@ -39,6 +64,18 @@ formula. `audit.json` carries the same data (`schema: 1`).
 The score starts at 100 and subtracts documented penalties (see the bottom of
 any report). It is meant for comparing runs of the same repo over time, not
 for comparing repos to each other.
+
+Two things deliberately do not score, because a score should measure what the
+current state of the code controls:
+
+- **PR hygiene is a nudge, not a penalty.** It reads commit history on `main`,
+  which cannot be fixed retroactively and corrects itself as PR-tagged commits
+  land. Section 12 requires a PR on a client repo; on your own repo it is your
+  call, and the audit is not the place to argue about it.
+- **The test penalty is a share, not a count.** Decomposing one oversized
+  component into ten presentational children is exactly what section 1 asks
+  for, and it triples the denominator. Scoring the count would mean the score
+  got worse for doing the right thing.
 
 ## In CI
 
@@ -51,6 +88,30 @@ flipped from pass to fail, more `legion/*` errors, more lint errors, more
 file-wide disables, more files without tests, or a lower score. `--fail-on
 error` fails on any failed gate or `legion/*` error regardless of baseline;
 `--fail-on never` always exits 0.
+
+## Nudges
+
+Every run ends with the nudges: what this repo could do better, why it
+matters, and the command to do it. They are advisory. They never change the
+score and never change the exit code, because advice that can fail your build
+is not advice.
+
+```
+legion-audit: score 71/100, all gates green
+
+TOOLCHAIN
+  This repo runs on npm. Legion repos run on Yarn Berry.
+    why  Berry writes a packageManager field into package.json, so
+         Corepack pins the exact Yarn every machine and every CI runner
+         uses.
+    fix  corepack enable
+    fix  yarn set version berry
+    fix  rm -rf node_modules package-lock.json
+    fix  yarn install
+```
+
+`legion-audit advice` prints only that, skipping the slow gates. The nudges
+also land in `AUDIT.md` under `## Nudges` and in the JSON as `advice`.
 
 ## `legion-audit directives`
 

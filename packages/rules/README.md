@@ -30,6 +30,32 @@ own `no-ternary`, `no-unneeded-ternary` and `max-lines` rules by
 `defineLegionConfig`; `any` outside declared boundary paths comes from
 `typescript/no-explicit-any`.
 
+## Presets
+
+`recommended` runs every rule at level 2, `strict` at 3, and `reactNative` is
+`recommended` with the web assumptions removed. Any of them composes with
+`defineLegionConfig`:
+
+```ts
+import { defineLegionConfig, recommendedInput } from 'legion-rules';
+
+export const config = defineLegionConfig({
+  ...recommendedInput,
+  reactNative: true,
+});
+```
+
+`reactNative: true` does three things. It turns off `no-use-client-in-page`
+and `no-client-globals-in-state-init`, which describe failures that only
+exist on a server-rendered page. It widens
+`no-admin-client-in-browser` to every file, because a React Native bundle has
+no server half and a service-role key in it is readable by anyone with the
+app. And it adds the `src/`-prefixed paths to the `any` boundaries, since
+that is where a React Native project keeps `lib/supabase`.
+
+Everything else is unchanged: the rules are AST rules about React, and React
+Native is React.
+
 ## Tolerance levels
 
 Every rule takes one number, 0 to 3.

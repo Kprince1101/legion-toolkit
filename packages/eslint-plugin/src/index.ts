@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import {
   defineLegionConfig,
+  reactNative as reactNativeConfig,
   recommended as recommendedConfig,
   rules,
   strict as strictConfig,
@@ -21,17 +22,19 @@ export interface LegionPlugin {
   configs: {
     recommended: EslintFlatConfig[];
     strict: EslintFlatConfig[];
+    reactNative: EslintFlatConfig[];
   };
 }
 
 const plugin: LegionPlugin = {
   meta: { name: 'legion', version },
   rules,
-  configs: { recommended: [], strict: [] },
+  configs: { recommended: [], strict: [], reactNative: [] },
 };
 
 plugin.configs.recommended = recommendedConfig.eslint(plugin);
 plugin.configs.strict = strictConfig.eslint(plugin);
+plugin.configs.reactNative = reactNativeConfig.eslint(plugin);
 
 export const legionEslintConfig = (
   config: LegionConfig | LegionConfigInput,
@@ -46,6 +49,11 @@ export const legionEslintConfig = (
 export const legionOxlintConfig = (config: LegionConfigInput) =>
   defineLegionConfig(config).oxlint;
 
-export { recommendedConfig as recommended, strictConfig as strict, rules };
+export {
+  recommendedConfig as recommended,
+  strictConfig as strict,
+  reactNativeConfig as reactNative,
+  rules,
+};
 
 export default plugin;

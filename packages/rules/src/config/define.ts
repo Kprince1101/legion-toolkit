@@ -19,6 +19,7 @@ export interface LegionConfigInput {
   components?: PresentationalComponentsOptions;
   adminClient?: NoAdminClientInBrowserOptions;
   reactCompiler?: boolean;
+  reactNative?: boolean;
 }
 
 export interface OxlintOverride {
@@ -55,6 +56,21 @@ export const DEFAULT_ANY_BOUNDARIES = [
   '**/*.d.ts',
   'types/db.ts',
 ];
+
+export const REACT_NATIVE_ANY_BOUNDARIES = [
+  'lib/supabase/**',
+  'src/lib/supabase/**',
+  '**/*.d.ts',
+  'types/db.ts',
+  'src/types/db.ts',
+];
+
+export const WEB_ONLY_RULES: LegionRuleName[] = [
+  'no-use-client-in-page',
+  'no-client-globals-in-state-init',
+];
+
+export const REACT_NATIVE_BROWSER_PATHS = ['/'];
 
 export const DEFAULT_COMPONENT_FILES = ['**/*.tsx'];
 
@@ -95,7 +111,24 @@ const resolveLevels = (
   ) {
     resolved['no-manual-memo'] = highestLevel(input);
   }
+  if (input.reactNative === true) {
+    for (const name of WEB_ONLY_RULES) resolved[name] = 0;
+  }
   return resolved;
+};
+
+const adminClientOptions = (
+  input: LegionConfigInput,
+): NoAdminClientInBrowserOptions => {
+  const configured: NoAdminClientInBrowserOptions = input.adminClient ?? {};
+  if (input.reactNative !== true) return configured;
+  if (configured.browserPaths !== undefined) return configured;
+  return { ...configured, browserPaths: REACT_NATIVE_BROWSER_PATHS };
+};
+
+const defaultAnyBoundaries = (input: LegionConfigInput): string[] => {
+  if (input.reactNative === true) return REACT_NATIVE_ANY_BOUNDARIES;
+  return DEFAULT_ANY_BOUNDARIES;
 };
 
 const optionsFor = (
@@ -111,7 +144,7 @@ const optionsFor = (
       reactCompiler: input.reactCompiler === true,
     };
   }
-  if (name === 'no-admin-client-in-browser') return input.adminClient ?? {};
+  if (name === 'no-admin-client-in-browser') return adminClientOptions(input);
   return undefined;
 };
 
@@ -129,7 +162,7 @@ export const defineLegionConfig = (input: LegionConfigInput): LegionConfig => {
   const ruleLevels = resolveLevels(input);
   const noTernary = input.noTernary ?? 0;
   const noExplicitAny = input.noExplicitAny ?? 0;
-  const anyBoundaries = input.anyBoundaries ?? DEFAULT_ANY_BOUNDARIES;
+  const anyBoundaries = input.anyBoundaries ?? defaultAnyBoundaries(input);
   const componentFiles = input.componentFiles ?? DEFAULT_COMPONENT_FILES;
   const testFiles = input.testFiles ?? DEFAULT_TEST_FILES;
   const cap = input.componentMaxLines ?? COMPONENT_LINE_CAP;

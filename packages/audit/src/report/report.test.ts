@@ -36,8 +36,41 @@ const base = (): AuditResult => ({
     ratio: 1,
     lastPrCommit: 'abc (#1)',
   },
-  testCoverage: { components: 4, hooks: 2, missing: [] },
+  testCoverage: {
+    components: 4,
+    hooks: 2,
+    missing: [],
+    source: 'filenames',
+    totalPct: null,
+  },
   lockfile: { status: 'pass', found: ['yarn.lock'], packageManager: 'yarn' },
+  toolchain: {
+    packageManager: 'yarn',
+    yarnFlavor: 'berry',
+    packageManagerField: 'yarn@4.18.0',
+    framework: 'next',
+    workspaces: false,
+    hasOxlintConfig: true,
+    hasEslintConfig: false,
+    hasOxlintBin: true,
+    hasEslintBin: false,
+    hasPrettierConfig: true,
+    hasTsconfig: true,
+    toolkitInstalled: true,
+    pluginReferenced: true,
+    workspaceRoot: '/repo',
+    isWorkspacePackage: false,
+    scripts: {},
+  },
+  expo: {
+    name: 'expo-doctor',
+    status: 'skipped',
+    summary: 'not an expo project',
+    patchDrift: [],
+    installed: false,
+  },
+  workspace: { root: '/repo', workspaceRoot: '/repo', isPackage: false },
+  advice: [],
 });
 
 const withScore = (result: AuditResult): AuditResult => ({
@@ -90,7 +123,21 @@ describe('computeScore', () => {
         description: '',
       },
     ];
-    expect(computeScore(result)).toBe(100 - 20 - 4 - 9 - 1 - 5);
+    const uncovered = (1 / 6) * 15;
+    expect(computeScore(result)).toBe(Math.round(100 - 20 - 4 - uncovered - 5));
+  });
+
+  it('leaves PR hygiene out of the score entirely', () => {
+    const result = base();
+    const clean = computeScore(result);
+    result.prHygiene = {
+      status: 'fail',
+      inspected: 44,
+      withPr: 2,
+      ratio: 0.045,
+      lastPrCommit: null,
+    };
+    expect(computeScore(result)).toBe(clean);
   });
 });
 

@@ -133,6 +133,7 @@ const runScript = (script: string) => {
 
 const lint = runScript('lint');
 const eslint = runScript('lint:eslint');
+const native = runScript('lint:native');
 const audit = runScript('audit');
 
 const expectFinding = (output: string, needle: string): void => {
@@ -147,6 +148,17 @@ const expectFinding = (output: string, needle: string): void => {
 expectFinding(lint.stdout + lint.stderr, 'no-enum');
 expectFinding(lint.stdout + lint.stderr, 'no-function-keyword');
 expectFinding(eslint.stdout + eslint.stderr, 'legion/no-enum');
+expectFinding(
+  native.stdout + native.stderr,
+  'legion/no-admin-client-in-browser',
+);
+const webOutput = eslint.stdout + eslint.stderr;
+if (webOutput.includes('native/lib/feed.ts')) {
+  console.error(
+    `the web preset should not reach native/lib/feed.ts:\n${webOutput}`,
+  );
+  process.exit(1);
+}
 if (audit.status !== 0) {
   console.error(
     `legion-audit failed under ${manager}:\n${audit.stdout}\n${audit.stderr}`,
@@ -156,11 +168,13 @@ if (audit.status !== 0) {
 const report = readFileSync(join(app, 'AUDIT.md'), 'utf8');
 expectFinding(report, 'legion/no-enum');
 expectFinding(report, '## Gates');
+expectFinding(report, '## Toolchain');
+expectFinding(report, '## Nudges');
 if (!existsSync(join(app, 'audit.json'))) {
   console.error('audit.json was not written');
   process.exit(1);
 }
 console.log(
-  `consumer smoke under ${manager}: plugin ran under oxlint and ESLint, legion-audit wrote a report`,
+  `consumer smoke under ${manager}: plugin ran under oxlint and ESLint, the reactNative preset caught the admin client in a plain lib file, legion-audit wrote a report`,
 );
 rmSync(work, { recursive: true, force: true });

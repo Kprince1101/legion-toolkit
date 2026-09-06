@@ -1,4 +1,7 @@
+import { uncoveredShare } from './score.js';
 import type { AuditResult, Regression } from '../types.js';
+
+const percent = (share: number): string => `${Math.round(share * 100)}%`;
 
 const gateStatus = (result: AuditResult, name: string): string =>
   result.gates.find((gate) => gate.name === name)?.status ?? 'skipped';
@@ -44,11 +47,13 @@ export const findRegressions = (
       after: String(after.directives.fileWide.length),
     });
   }
-  if (after.testCoverage.missing.length > before.testCoverage.missing.length) {
+  const beforeUncovered = uncoveredShare(before.testCoverage);
+  const afterUncovered = uncoveredShare(after.testCoverage);
+  if (afterUncovered > beforeUncovered) {
     regressions.push({
-      area: 'files without tests',
-      before: String(before.testCoverage.missing.length),
-      after: String(after.testCoverage.missing.length),
+      area: 'share without tests',
+      before: percent(beforeUncovered),
+      after: percent(afterUncovered),
     });
   }
   if (after.score < before.score) {

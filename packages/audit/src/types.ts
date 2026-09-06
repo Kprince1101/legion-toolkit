@@ -67,10 +67,20 @@ export interface MissingTest {
   kind: 'component' | 'hook';
 }
 
+export type CoverageSource = 'coverage-report' | 'references' | 'filenames';
+
+export interface CoverageReport {
+  available: boolean;
+  files: Record<string, boolean>;
+  totalPct: number | null;
+}
+
 export interface TestCoverage {
   components: number;
   hooks: number;
   missing: MissingTest[];
+  source: CoverageSource;
+  totalPct: number | null;
 }
 
 export interface LockfileResult {
@@ -80,6 +90,59 @@ export interface LockfileResult {
 }
 
 export type PackageManager = 'yarn' | 'npm' | 'pnpm' | 'bun' | 'unknown';
+
+export type YarnFlavor = 'berry' | 'classic' | 'unknown' | 'none';
+
+export type Framework =
+  'expo' | 'react-native' | 'next' | 'vite' | 'react' | 'node';
+
+export interface WorkspaceContext {
+  root: string;
+  workspaceRoot: string;
+  isPackage: boolean;
+}
+
+export interface Toolchain {
+  packageManager: PackageManager;
+  yarnFlavor: YarnFlavor;
+  packageManagerField: string | null;
+  framework: Framework;
+  workspaces: boolean;
+  hasOxlintConfig: boolean;
+  hasEslintConfig: boolean;
+  hasOxlintBin: boolean;
+  hasEslintBin: boolean;
+  hasPrettierConfig: boolean;
+  hasTsconfig: boolean;
+  toolkitInstalled: boolean;
+  pluginReferenced: boolean;
+  workspaceRoot: string;
+  isWorkspacePackage: boolean;
+  scripts: Record<string, string>;
+}
+
+export interface VersionDrift {
+  name: string;
+  expected: string;
+  found: string;
+}
+
+export interface ExpoDoctorResult extends GateResult {
+  patchDrift: VersionDrift[];
+  installed: boolean;
+}
+
+export type AdviceArea =
+  'toolchain' | 'rules' | 'tests' | 'bypasses' | 'process';
+
+export interface Advice {
+  id: string;
+  area: AdviceArea;
+  title: string;
+  why: string;
+  fix: string[];
+  detail: string[];
+}
 
 export interface AuditResult {
   schema: 1;
@@ -93,6 +156,10 @@ export interface AuditResult {
   prHygiene: PrHygiene;
   testCoverage: TestCoverage;
   lockfile: LockfileResult;
+  toolchain: Toolchain;
+  expo: ExpoDoctorResult;
+  workspace: WorkspaceContext;
+  advice: Advice[];
 }
 
 export interface AuditOptions {
@@ -101,6 +168,7 @@ export interface AuditOptions {
   runTests: boolean;
   runTypecheck: boolean;
   runFormat: boolean;
+  runExpoDoctor: boolean;
   quiet: boolean;
   commitsToInspect: number;
   ignore: string[];
