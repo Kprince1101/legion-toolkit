@@ -20,3 +20,7 @@ updates:
     ignore:
       - dependency-name: 'legion-*'
       - dependency-name: 'eslint-plugin-legion'
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
