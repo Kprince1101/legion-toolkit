@@ -1,5 +1,11 @@
 # eslint-plugin-legion
 
+## 0.4.0
+
+### Patch Changes
+
+- legion-rules@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
