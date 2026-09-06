@@ -11,8 +11,7 @@ if (process.env.GITHUB_ACTIONS !== 'true') {
   process.exit(1);
 }
 
-const hasToken = (): boolean =>
-  (process.env.NODE_AUTH_TOKEN ?? '').length > 0;
+const hasToken = (): boolean => (process.env.NODE_AUTH_TOKEN ?? '').length > 0;
 
 const hasOidc = (): boolean =>
   (process.env.ACTIONS_ID_TOKEN_REQUEST_URL ?? '').length > 0;

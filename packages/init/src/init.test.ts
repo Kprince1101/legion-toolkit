@@ -30,19 +30,6 @@ const detection = (overrides: Partial<InitDetection> = {}): InitDetection => ({
   ...overrides,
 });
 
-const kinds = (root: string, over: Partial<InitDetection> = {}) => {
-  const plan = buildPlan(
-    detection({ root, ...over }),
-    over.preset ?? 'recommended',
-  );
-  return Object.fromEntries(
-    plan.actions.map((action) => [
-      `${action.path}:${action.reason.slice(0, 12)}`,
-      action.kind,
-    ]),
-  );
-};
-
 const repo = (files: Record<string, string>): string => {
   const root = mkdtempSync(join(tmpdir(), 'legion-init-'));
   for (const [name, contents] of Object.entries(files)) {
