@@ -6,6 +6,7 @@ import type {
   AuditResult,
   DirectivesResult,
   LintResult,
+  DependencyResult,
   PrHygiene,
   RuleCoverage,
   TestCoverage,
@@ -119,6 +120,25 @@ export const ruleCoverageAdvice = (coverage: RuleCoverage): Advice | null => {
   };
 };
 
+export const dependencyAdvice = (
+  dependencies: DependencyResult,
+): Advice | null => {
+  if (dependencies.forbidden.length === 0) return null;
+  const names = dependencies.forbidden.map((entry) => entry.name).join(', ');
+  return {
+    id: 'forbidden-dependencies',
+    area: 'toolchain',
+    title: `${dependencies.forbidden.length} dependency choice(s) section 9 rules out: ${names}.`,
+    why: 'Section 10 lists adding a state library to a simple app under automatic rejection, and section 7 replaces runtime CSS-in-JS with tokens. Nothing was checking either, so the rule lived only in the document.',
+    fix: dependencies.forbidden.map(
+      (entry) => `${entry.name}: use ${entry.instead}`,
+    ),
+    detail: dependencies.forbidden.map(
+      (entry) => `${entry.name}@${entry.version} — ${entry.reason}`,
+    ),
+  };
+};
+
 export const prAdvice = (hygiene: PrHygiene): Advice | null => {
   if (hygiene.status === 'skipped') return null;
   if (hygiene.ratio >= PR_HYGIENE_FLOOR) return null;
@@ -154,6 +174,8 @@ export const buildAdvice = (
   if (bypasses) entries.push(bypasses);
   const coverage = ruleCoverageAdvice(result.ruleCoverage);
   if (coverage) entries.push(coverage);
+  const deps = dependencyAdvice(result.dependencies);
+  if (deps) entries.push(deps);
   const process = prAdvice(result.prHygiene);
   if (process) entries.push(process);
   return entries;

@@ -22,16 +22,34 @@ export interface LegionRuleModule {
     docs: RuleDocs;
     schema: unknown[];
     messages: Record<string, string>;
+    fixable?: 'code' | 'whitespace';
+    hasSuggestions?: boolean;
   };
   create: (context: Rule.RuleContext) => Listeners;
 }
 
 export type Location = AST.SourceLocation | { line: number; column: number };
 
+export type Fixer = Rule.RuleFixer;
+
+export type FixTarget = Parameters<Rule.RuleFixer['insertTextAfter']>[0];
+
+export const fixTarget = (node: unknown): FixTarget => node as FixTarget;
+
+export type FixResult = Rule.Fix | Rule.Fix[] | null;
+
+export interface Suggestion {
+  messageId: string;
+  data?: Record<string, string>;
+  fix: (fixer: Fixer) => FixResult;
+}
+
 export interface Report {
   loc: Location;
   messageId: string;
   data?: Record<string, string>;
+  fix?: (fixer: Fixer) => FixResult;
+  suggest?: Suggestion[];
 }
 
 export interface RuleContext {
@@ -47,7 +65,7 @@ export const getContext = (context: Rule.RuleContext): RuleContext => ({
   sourceCode: context.sourceCode,
   filename: context.filename,
   options: context.options,
-  report: (descriptor) => context.report(descriptor),
+  report: (descriptor) => context.report(descriptor as never),
 });
 
 export const commentLocation = (

@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint';
 import type { TSESTree } from '@typescript-eslint/types';
 import type { LegionRuleModule } from '../types.js';
-import { getContext } from '../types.js';
+import { fixTarget, getContext } from '../types.js';
 import { elementName, findAttribute, hasSpread, staticValue } from '../jsx.js';
 
 const VALID_TYPES = new Set(['button', 'submit', 'reset']);
@@ -14,6 +14,7 @@ const rule: LegionRuleModule = {
         'A <button> always declares its type. The HTML default is submit, so a bare button inside a form submits it.',
       standard: 'LEGION-STANDARDS section 3',
     },
+    fixable: 'code',
     schema: [],
     messages: {
       missingType:
@@ -30,7 +31,12 @@ const rule: LegionRuleModule = {
         const attribute = findAttribute(node, 'type');
         if (!attribute) {
           if (hasSpread(node)) return;
-          report({ loc: node.loc, messageId: 'missingType' });
+          report({
+            loc: node.loc,
+            messageId: 'missingType',
+            fix: (fixer) =>
+              fixer.insertTextAfter(fixTarget(node.name), ' type="button"'),
+          });
           return;
         }
         const value = staticValue(attribute);

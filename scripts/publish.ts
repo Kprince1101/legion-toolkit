@@ -121,6 +121,7 @@ const order = [
   'eslint-plugin',
   'audit',
   'init',
+  'steer',
   'toolkit',
 ];
 const dirs = readdirSync(packagesDir).filter((entry) =>

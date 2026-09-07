@@ -19,14 +19,20 @@ runRule('no-target-blank-without-rel', rule, {
   invalid: [
     {
       code: 'export const A = () => <a href={u} target="_blank">x</a>;',
+      output:
+        'export const A = () => <a rel="noopener noreferrer" href={u} target="_blank">x</a>;',
       errors: [{ messageId: 'missingRel' }],
     },
     {
       code: 'export const A = () => <a href={u} target="_blank" rel="nofollow">x</a>;',
+      output:
+        'export const A = () => <a href={u} target="_blank" rel="nofollow noopener noreferrer">x</a>;',
       errors: [{ messageId: 'missingRel' }],
     },
     {
       code: 'export const A = () => <form action={u} target="_blank" />;',
+      output:
+        'export const A = () => <form rel="noopener noreferrer" action={u} target="_blank" />;',
       errors: [{ messageId: 'missingRel' }],
     },
   ],

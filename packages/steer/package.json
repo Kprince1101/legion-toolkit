@@ -1,0 +1,60 @@
+{
+  "name": "legion-steer",
+  "version": "0.3.0",
+  "description": "Generates a managed agent-steering block from a repo's resolved Legion lint config, so what the agents are told matches what the linter enforces.",
+  "license": "MIT",
+  "author": "Veracium LLC",
+  "homepage": "https://github.com/Kprince1101/legion-toolkit/tree/main/packages/steer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kprince1101/legion-toolkit.git",
+    "directory": "packages/steer"
+  },
+  "bugs": {
+    "url": "https://github.com/Kprince1101/legion-toolkit/issues"
+  },
+  "keywords": [
+    "agents",
+    "steering",
+    "eslint",
+    "oxlint",
+    "claude",
+    "legion"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": "./dist/cli.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cli": "./dist/cli.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/__tests__",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "legion-audit": "workspace:^",
+    "legion-rules": "workspace:^"
+  },
+  "scripts": {
+    "build": "node ../../scripts/copy-license.ts && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true}); require('node:fs').rmSync('LICENSE',{force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,7 +1,7 @@
 export type FailOn = 'regression' | 'error' | 'never';
 
 export interface CliArgs {
-  command: 'audit' | 'directives' | 'advice' | 'help';
+  command: 'audit' | 'directives' | 'advice' | 'suppress' | 'help';
   root: string;
   md: string | null;
   json: string | null;
@@ -12,6 +12,8 @@ export interface CliArgs {
   runTypecheck: boolean;
   runFormat: boolean;
   runExpoDoctor: boolean;
+  dryRun: boolean;
+  annotations: boolean;
   quiet: boolean;
   ignore: string[];
 }
@@ -39,6 +41,8 @@ export const parseArgs = (argv: string[]): CliArgs => {
     runTypecheck: true,
     runFormat: true,
     runExpoDoctor: true,
+    dryRun: false,
+    annotations: false,
     quiet: false,
     ignore: [],
   };
@@ -47,6 +51,7 @@ export const parseArgs = (argv: string[]): CliArgs => {
     const arg = argv[index] ?? '';
     if (arg === 'directives') args.command = 'directives';
     else if (arg === 'advice') args.command = 'advice';
+    else if (arg === 'suppress') args.command = 'suppress';
     else if (arg === 'help' || arg === '--help' || arg === '-h')
       args.command = 'help';
     else if (arg === '--root') {
@@ -76,6 +81,8 @@ export const parseArgs = (argv: string[]): CliArgs => {
     else if (arg === '--no-typecheck') args.runTypecheck = false;
     else if (arg === '--no-format') args.runFormat = false;
     else if (arg === '--no-expo-doctor') args.runExpoDoctor = false;
+    else if (arg === '--dry-run') args.dryRun = true;
+    else if (arg === '--annotations') args.annotations = true;
     else if (arg === '--quiet' || arg === '-q') args.quiet = true;
     else throw new Error(`unknown argument: ${arg}`);
     index += 1;
@@ -91,6 +98,8 @@ Commands
   (none)        full audit: gates, rule counts, bypasses, PR hygiene, tests by file
   directives    only scan for file-wide lint disables; exit 1 if any (fast, for lint scripts)
   advice        the nudges only, printed for a human; never fails the build
+  suppress      record today's legion/* findings as accepted, so --fail-on error
+                only fails on new ones. Use --dry-run to preview the count.
 
 Options
   --root <dir>            repo root (default: cwd)
@@ -105,5 +114,7 @@ Options
   --no-typecheck          skip tsc
   --no-format             skip prettier --check
   --no-expo-doctor        skip expo-doctor on an Expo project
+  --annotations           also print GitHub Actions annotations, so findings
+                          land inline on the pull request diff
   --quiet, -q             no progress output on stderr
 `;
