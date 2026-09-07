@@ -10,6 +10,7 @@ import noDangerousHtml from './no-dangerous-html.js';
 import noHardcodedHex from './no-hardcoded-hex.js';
 import noRnButton from './no-rn-button.js';
 import noTargetBlankWithoutRel from './no-target-blank-without-rel.js';
+import noWebDialogs from './no-web-dialogs.js';
 import noDisables from './no-disables.js';
 import noAdminClientInBrowser from './no-admin-client-in-browser.js';
 import noEnum from './no-enum.js';
@@ -47,6 +48,7 @@ export const rules = {
   'no-rn-button': noRnButton,
   'touchable-has-accessibility-label': touchableHasAccessibilityLabel,
   'controlled-text-input': controlledTextInput,
+  'no-web-dialogs': noWebDialogs,
 } satisfies Record<string, LegionRuleModule>;
 
 export type LegionRuleName = keyof typeof rules;

@@ -23,6 +23,11 @@ describe('reactNative', () => {
     }
   });
 
+  it('covers section 3 Alert.alert with the part of it a linter can check', () => {
+    expect(reactNative.levels['no-web-dialogs']).toBeGreaterThan(0);
+    expect(recommended.levels['no-web-dialogs']).toBe(0);
+  });
+
   it('turns the native-only rules on, and only here', () => {
     for (const name of NATIVE_ONLY_RULES) {
       expect(reactNative.levels[name]).toBeGreaterThan(0);

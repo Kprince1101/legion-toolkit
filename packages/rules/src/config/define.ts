@@ -79,6 +79,7 @@ export const NATIVE_ONLY_RULES: LegionRuleName[] = [
   'no-rn-button',
   'touchable-has-accessibility-label',
   'controlled-text-input',
+  'no-web-dialogs',
 ];
 
 export const REACT_NATIVE_BROWSER_PATHS = ['/'];

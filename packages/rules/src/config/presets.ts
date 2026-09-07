@@ -13,6 +13,7 @@ export const INTRODUCED_AT_WARN: LegionRuleName[] = [
   'no-rn-button',
   'touchable-has-accessibility-label',
   'controlled-text-input',
+  'no-web-dialogs',
 ];
 
 export const recommendedInput: LegionConfigInput = {
@@ -40,6 +41,7 @@ export const recommendedInput: LegionConfigInput = {
     'no-rn-button': 1,
     'touchable-has-accessibility-label': 1,
     'controlled-text-input': 1,
+    'no-web-dialogs': 1,
   },
   noTernary: 2,
   noExplicitAny: 2,
@@ -70,6 +72,7 @@ export const strictInput: LegionConfigInput = {
     'no-rn-button': 3,
     'touchable-has-accessibility-label': 3,
     'controlled-text-input': 3,
+    'no-web-dialogs': 3,
   },
   noTernary: 3,
   noExplicitAny: 3,
