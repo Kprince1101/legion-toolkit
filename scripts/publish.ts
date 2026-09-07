@@ -58,18 +58,34 @@ const publishedVersion = (name: string): string | null => {
   return result.stdout.trim();
 };
 
-const appendChangesetsGitTagEvent = (pkg: {
+const packageTag = (pkg: { name: string; version: string }): string =>
+  `${pkg.name}@${pkg.version}`;
+
+const createLocalGitTag = (tag: string): void => {
+  const result = spawnSync('git', ['tag', '-f', tag], {
+    cwd: root,
+    stdio: 'inherit',
+  });
+  if (result.status !== 0) process.exit(result.status ?? 1);
+};
+
+const appendChangesetsGitTagEvent = (
+  pkg: { name: string },
+  tag: string,
+): void => {
+  const outputPath = process.env.CHANGESETS_OUTPUT;
+  if (!outputPath) return;
+  const event = { type: 'git-tag' as const, tag, packageName: pkg.name };
+  appendFileSync(outputPath, `${JSON.stringify(event)}\n`, 'utf8');
+};
+
+const recordReleasedPackage = (pkg: {
   name: string;
   version: string;
 }): void => {
-  const outputPath = process.env.CHANGESETS_OUTPUT;
-  if (!outputPath) return;
-  const event = {
-    type: 'git-tag' as const,
-    tag: `${pkg.name}@${pkg.version}`,
-    packageName: pkg.name,
-  };
-  appendFileSync(outputPath, `${JSON.stringify(event)}\n`, 'utf8');
+  const tag = packageTag(pkg);
+  createLocalGitTag(tag);
+  appendChangesetsGitTagEvent(pkg, tag);
 };
 
 const initializeChangesetsOutputFileSoAnEmptyRunStillReadsCleanly =
@@ -104,6 +120,7 @@ for (const dir of sorted) {
   if (pkg.private) continue;
   if (publishedVersion(pkg.name) === pkg.version) {
     console.log(`${pkg.name}@${pkg.version} is already on npm`);
+    recordReleasedPackage(pkg);
     continue;
   }
   const tarball = resolve(tmpdir(), `${pkg.name}-${pkg.version}.tgz`);
@@ -123,7 +140,7 @@ for (const dir of sorted) {
     },
   );
   if (publish.status !== 0) process.exit(publish.status ?? 1);
-  appendChangesetsGitTagEvent(pkg);
+  recordReleasedPackage(pkg);
   published += 1;
 }
 console.log(`published ${published} package(s)`);
