@@ -48,6 +48,7 @@
     "legion/no-rn-button": "warn",
     "legion/touchable-has-accessibility-label": "warn",
     "legion/controlled-text-input": "warn",
+    "legion/no-web-dialogs": "warn",
     "no-ternary": "error",
     "no-unneeded-ternary": [
       "error",

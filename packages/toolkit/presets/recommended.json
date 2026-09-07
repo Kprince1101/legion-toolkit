@@ -44,6 +44,7 @@
     "legion/no-rn-button": "off",
     "legion/touchable-has-accessibility-label": "off",
     "legion/controlled-text-input": "off",
+    "legion/no-web-dialogs": "off",
     "no-ternary": "error",
     "no-unneeded-ternary": [
       "error",
