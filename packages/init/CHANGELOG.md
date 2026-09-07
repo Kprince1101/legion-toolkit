@@ -1,5 +1,12 @@
 # legion-init
 
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies [45ef19c]
+  - legion-audit@0.5.0
+
 ## 0.3.0
 
 ### Minor Changes

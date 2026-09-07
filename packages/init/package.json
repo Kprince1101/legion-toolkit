@@ -1,6 +1,6 @@
 {
   "name": "legion-init",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "The front door for LEGION-STANDARDS tooling: detects a repo's package manager, linter, framework and agents, then wires the Legion plugin, Prettier config, tsconfig and audit script without overwriting anything.",
   "license": "MIT",
   "author": "Veracium LLC",
