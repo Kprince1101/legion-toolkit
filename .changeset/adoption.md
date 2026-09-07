@@ -31,6 +31,15 @@ A rule the config does not enforce cannot appear in the block, so steering
 cannot drift from enforcement. `legion-steer check` fails CI when it has.
 Only the region between its markers is ever touched.
 
+`legion-steer hook` closes the loop. Lint reports a violation after the file
+exists; the hook runs the same rules on the content Claude Code is about to
+write and exits 2, which blocks the write. `PreToolUse` lints
+`tool_input.content` in a scratch copy beside the intended path, so
+path-based rules see the real directory, and the finding is reported against
+the file the agent tried to write rather than the copy. `PostToolUse` lints
+what just landed and reports without blocking. `init` registers both in
+`.claude/settings.json`, merging with hooks that are already there.
+
 **A dependency check.** Section 10 lists adding a state library under
 automatic rejection and nothing was checking it. The audit now reads
 `package.json` for Redux, MobX, runtime CSS-in-JS and Moment, and nudges with

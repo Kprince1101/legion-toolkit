@@ -8,6 +8,8 @@ import {
 } from 'legion-rules';
 import type { LegionConfig } from 'legion-rules';
 import { renderBlock } from './block.js';
+import { evaluate, parsePayload, renderFindings } from './hook.js';
+import { registerHooks } from './settings.js';
 import { checkManagedBlock, writeManagedBlock } from './managed.js';
 import { resolveTargets } from './targets.js';
 
@@ -24,8 +26,9 @@ rules this repo actually enforces. A rule the config does not enforce cannot
 appear in the block, so the steering cannot drift from the enforcement.
 
 Commands
-  init      write or refresh the block
+  init      write or refresh the block, and register the Claude Code hooks
   check     exit 1 if the block is missing or out of date (for CI)
+  hook      the hook handler itself; reads the hook payload on stdin
 
 Options
   --root <dir>        repo root (default: cwd)
@@ -33,15 +36,17 @@ Options
   --targets <ids>     comma separated: agents,junie,cursor,copilot
                       (default: whichever are already present)
   --lint <command>    the lint command to name in the block
+  --no-hooks          skip registering hooks in .claude/settings.json
   --help, -h          this text
 `;
 
 interface SteerArgs {
-  command: 'init' | 'check' | 'help';
+  command: 'init' | 'check' | 'hook' | 'help';
   root: string;
   preset: string;
   targets: string[];
   lint: string;
+  hooks: boolean;
 }
 
 const takeValue = (argv: string[], index: number, flag: string): string => {
@@ -59,12 +64,14 @@ export const parseSteerArgs = (argv: string[]): SteerArgs => {
     preset: 'recommended',
     targets: [],
     lint: 'yarn lint',
+    hooks: true,
   };
   let index = 0;
   while (index < argv.length) {
     const arg = argv[index] ?? '';
     if (arg === 'init') args.command = 'init';
     else if (arg === 'check') args.command = 'check';
+    else if (arg === 'hook') args.command = 'hook';
     else if (arg === '--help' || arg === '-h') args.command = 'help';
     else if (arg === '--root') {
       args.root = takeValue(argv, index, arg);
@@ -115,10 +122,32 @@ const runInit = (args: SteerArgs): number => {
     const result = writeManagedBlock(root, target.file, block);
     console.log(`  ${result.outcome.padEnd(9)} ${result.path}`);
   }
+  if (args.hooks) {
+    const added = registerHooks(root);
+    for (const entry of added) console.log(`  hook      ${entry}`);
+  }
   console.log(
     `\nSteered ${targets.length} file(s) from the ${args.preset} preset.`,
   );
   return 0;
+};
+
+const readStdin = async (): Promise<string> => {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks).toString('utf8');
+};
+
+const runHook = async (args: SteerArgs): Promise<number> => {
+  const payload = parsePayload(await readStdin());
+  const verdict = evaluate(resolve(args.root), payload);
+  if (verdict.action === 'allow') return 0;
+  console.error(`legion-steer: ${verdict.reason}`);
+  console.error(renderFindings(verdict.findings));
+  console.error(
+    'Move the logic into a use<Component> hook or lib/, then write the file again.',
+  );
+  return 2;
 };
 
 const runCheck = (args: SteerArgs): number => {
@@ -138,7 +167,7 @@ const runCheck = (args: SteerArgs): number => {
   return 1;
 };
 
-const main = (): number => {
+const main = async (): Promise<number> => {
   let args: SteerArgs;
   try {
     args = parseSteerArgs(process.argv.slice(2));
@@ -152,7 +181,8 @@ const main = (): number => {
     return 0;
   }
   if (args.command === 'check') return runCheck(args);
+  if (args.command === 'hook') return runHook(args);
   return runInit(args);
 };
 
-process.exitCode = main();
+process.exitCode = await main();

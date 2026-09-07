@@ -3719,6 +3719,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "legion-steer@workspace:packages/steer"
   dependencies:
+    legion-audit: "workspace:^"
     legion-rules: "workspace:^"
   bin:
     legion-steer: ./dist/cli.js

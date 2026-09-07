@@ -1,4 +1,6 @@
-export { runAudit, DEFAULT_OPTIONS } from './audit.js';
+export { runAudit, DEFAULT_OPTIONS, probeFile } from './audit.js';
+export { localBin, run, stripAnsi } from './exec.js';
+export type { ExecResult } from './exec.js';
 export {
   scanDirectives,
   parseDirectivesInSource,

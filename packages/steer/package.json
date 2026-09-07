@@ -46,6 +46,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
+    "legion-audit": "workspace:^",
     "legion-rules": "workspace:^"
   },
   "scripts": {

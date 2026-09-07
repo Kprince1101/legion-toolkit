@@ -60,6 +60,38 @@ LEGION-STANDARDS.md for why. It deliberately does not reproduce or condense
 the standards, which §14 rules out — one file, one location, read by every
 repo underneath.
 
+## The hook: catching it before it lands
+
+Lint tells you after the file exists. `legion-steer hook` runs the same rules
+on the content Claude Code is _about to write_, and blocks the write when it
+would introduce an error.
+
+`init` registers it in `.claude/settings.json`, merging with whatever is
+already there:
+
+| event         | matcher       | behaviour                                                                                                                                   |
+| ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PreToolUse`  | `Write`       | lints `tool_input.content` in a scratch copy beside the target, so path-based rules see the real directory. Exit 2 blocks the write.        |
+| `PostToolUse` | `Edit\|Write` | lints the file that was just written and reports. The edit already happened, so this is feedback one edit later rather than one task later. |
+
+Only errors block; warnings do not. Non-TypeScript writes pass straight
+through, and if `oxlint` is not installed the hook stays out of the way.
+
+What the agent actually sees:
+
+```
+legion-steer: 1 violation(s) would land in this file
+  src/Panel.tsx:2  `useState` inside `Panel` is state in a component
+                   (LEGION-STANDARDS section 1). Own it in `usePanel` and
+                   return the value and a `handleX` setter.
+Move the logic into a use<Component> hook or lib/, then write the file again.
+```
+
+The path is the file it tried to write, not the scratch copy, and the message
+says what to do rather than only what is wrong.
+
+Skip registration with `--no-hooks`.
+
 ## `check` in CI
 
 ```sh
