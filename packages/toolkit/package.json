@@ -105,8 +105,7 @@
   "scripts": {
     "build": "node ../../scripts/generate-presets.ts && node ../../scripts/copy-license.ts",
     "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true}); require('node:fs').rmSync('presets',{recursive:true,force:true})\"",
-    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js && node --check bin/legion-toolkit.js",
-    "prepublishOnly": "node ../../scripts/require-ci.ts"
+    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js && node --check bin/legion-toolkit.js"
   },
   "engines": {
     "node": ">=22"

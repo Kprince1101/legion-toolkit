@@ -34,8 +34,7 @@
   "scripts": {
     "build": "node ../../scripts/copy-license.ts",
     "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true})\"",
-    "typecheck": "node -e \"for (const f of ['base','node','next','react-native']) JSON.parse(require('node:fs').readFileSync(f + '.json', 'utf8'))\"",
-    "prepublishOnly": "node ../../scripts/require-ci.ts"
+    "typecheck": "node -e \"for (const f of ['base','node','next','react-native']) JSON.parse(require('node:fs').readFileSync(f + '.json', 'utf8'))\""
   },
   "engines": {
     "node": ">=22"

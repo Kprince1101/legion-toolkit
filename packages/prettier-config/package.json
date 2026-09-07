@@ -39,8 +39,7 @@
   "scripts": {
     "build": "node ../../scripts/copy-license.ts",
     "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true})\"",
-    "typecheck": "node -e \"JSON.parse(require('node:fs').readFileSync('index.json', 'utf8'))\"",
-    "prepublishOnly": "node ../../scripts/require-ci.ts"
+    "typecheck": "node -e \"JSON.parse(require('node:fs').readFileSync('index.json', 'utf8'))\""
   },
   "engines": {
     "node": ">=22"

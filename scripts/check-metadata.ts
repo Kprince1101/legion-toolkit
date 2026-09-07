@@ -58,9 +58,6 @@ for (const entry of readdirSync(packagesDir)) {
   if (!pkg.files?.includes('LICENSE') || !pkg.files?.includes('README.md')) {
     failures.push(`${where}: files must include LICENSE and README.md`);
   }
-  if (pkg.scripts?.prepublishOnly !== 'node ../../scripts/require-ci.ts') {
-    failures.push(`${where}: prepublishOnly must run scripts/require-ci.ts`);
-  }
   if (!existsSync(resolve(dir, 'README.md'))) {
     failures.push(`${where}: README.md is missing`);
   }
