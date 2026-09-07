@@ -1,5 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import {
+  readdirSync,
+  readFileSync,
+  existsSync,
+  appendFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
@@ -52,7 +58,28 @@ const publishedVersion = (name: string): string | null => {
   return result.stdout.trim();
 };
 
+// changesets/action sets CHANGESETS_OUTPUT to a path and expects one
+// newline-delimited JSON event per package it should tag/release. Without
+// this, npm publishing still works, but the action silently skips creating
+// git tags and GitHub releases (it only logs a warning).
+const recordGitTag = (pkg: { name: string; version: string }): void => {
+  const outputPath = process.env.CHANGESETS_OUTPUT;
+  if (!outputPath) return;
+  const event = {
+    type: 'git-tag' as const,
+    tag: `${pkg.name}@${pkg.version}`,
+    packageName: pkg.name,
+  };
+  appendFileSync(outputPath, `${JSON.stringify(event)}\n`, 'utf8');
+};
+
 assertAuthenticated();
+
+// Create the output file up front so changesets/action can always read it,
+// even on a run where nothing ends up being published.
+if (process.env.CHANGESETS_OUTPUT) {
+  writeFileSync(process.env.CHANGESETS_OUTPUT, '', 'utf8');
+}
 
 const order = [
   'tsconfig',
@@ -95,6 +122,7 @@ for (const dir of sorted) {
     },
   );
   if (publish.status !== 0) process.exit(publish.status ?? 1);
+  recordGitTag(pkg);
   published += 1;
 }
 console.log(`published ${published} package(s)`);
