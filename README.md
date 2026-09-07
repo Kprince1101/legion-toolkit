@@ -11,14 +11,16 @@ are scoped, named, explained, and impossible for locked rules. Every one of
 those is a mechanical check here, because a rule that only lives in a
 document drifts.
 
-| Package                                              | What it is                                                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| [`legion-toolkit`](packages/toolkit)                 | One install, every tool as a subpath. Start here.                                                 |
-| [`eslint-plugin-legion`](packages/eslint-plugin)     | The rules as a plugin. Runs under oxlint (`jsPlugins`) and ESLint v9+, identically, proven in CI. |
-| [`legion-rules`](packages/rules)                     | The rule engine and `defineLegionConfig`, which maps tolerance levels 0 to 3 onto either linter.  |
-| [`legion-audit`](packages/audit)                     | A read-only scorecard: gates, per-rule counts, bypasses, PR hygiene, coverage. Plus the nudges.   |
-| [`legion-prettier-config`](packages/prettier-config) | Single quotes, trailing commas, 80 columns.                                                       |
-| [`legion-tsconfig`](packages/tsconfig)               | Strict base plus node, next, and react-native variants.                                           |
+| Package                                              | What it is                                                                                         |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [`legion-toolkit`](packages/toolkit)                 | One install, every tool as a subpath. Start here.                                                  |
+| [`legion-init`](packages/init)                       | `npx legion-toolkit init`: detects the repo and wires all of this up without overwriting anything. |
+| [`eslint-plugin-legion`](packages/eslint-plugin)     | The rules as a plugin. Runs under oxlint (`jsPlugins`) and ESLint v9+, identically, proven in CI.  |
+| [`legion-rules`](packages/rules)                     | The rule engine and `defineLegionConfig`, which maps tolerance levels 0 to 3 onto either linter.   |
+| [`legion-audit`](packages/audit)                     | A read-only scorecard: gates, per-rule counts, bypasses, PR hygiene, coverage. Plus the nudges.    |
+| [`legion-steer`](packages/steer)                     | Agent instructions generated from the resolved lint config, so what agents are told cannot drift.  |
+| [`legion-prettier-config`](packages/prettier-config) | Single quotes, trailing commas, 80 columns.                                                        |
+| [`legion-tsconfig`](packages/tsconfig)               | Strict base plus node, next, and react-native variants.                                            |
 
 ## Quick start
 
