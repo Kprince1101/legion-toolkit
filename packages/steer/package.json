@@ -1,6 +1,6 @@
 {
   "name": "legion-steer",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "Generates a managed agent-steering block from a repo's resolved Legion lint config, so what the agents are told matches what the linter enforces.",
   "license": "MIT",
   "author": "Veracium LLC",
