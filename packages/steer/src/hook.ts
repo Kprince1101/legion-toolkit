@@ -1,5 +1,11 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, dirname, extname, join } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, extname, isAbsolute, join } from 'node:path';
 import { localBin, parseOxlintJson, run } from 'legion-audit';
 import type { Finding } from 'legion-audit';
 
@@ -18,7 +24,31 @@ export interface HookVerdict {
   action: 'allow' | 'report' | 'block';
   findings: Finding[];
   reason: string;
+  linted: boolean;
 }
+
+export interface LintOutcome {
+  linted: boolean;
+  findings: Finding[];
+  reason: string;
+}
+
+export const resolveIn = (root: string, filePath: string): string => {
+  if (isAbsolute(filePath)) return filePath;
+  return join(root, filePath);
+};
+
+export const missingAncestors = (directory: string): string[] => {
+  const missing: string[] = [];
+  let current = directory;
+  while (!existsSync(current)) {
+    missing.unshift(current);
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return missing;
+};
 
 export const isLintable = (filePath: string): boolean =>
   LINTABLE.has(extname(filePath));
@@ -57,50 +87,98 @@ export const lintContent = (
   root: string,
   filePath: string,
   content: string,
-): Finding[] => {
+): LintOutcome => {
   const bin = localBin(root, 'oxlint');
-  if (!bin) return [];
-  const directory = dirname(filePath);
-  const scratch = mkdtempSync(join(directory, '.legion-steer-'));
-  const target = join(scratch, basename(filePath));
+  if (!bin) {
+    return { linted: false, findings: [], reason: 'oxlint is not installed' };
+  }
+  const directory = dirname(resolveIn(root, filePath));
+  const created = missingAncestors(directory);
+  let scratch: string | null = null;
   try {
+    for (const segment of created) mkdirSync(segment);
+    scratch = mkdtempSync(join(directory, '.legion-steer-'));
+    const target = join(scratch, basename(filePath));
     writeFileSync(target, content);
     const result = run(bin, ['--format', 'json', target], root);
-    return relabel(parseOxlintJson(result.stdout), basename(scratch), filePath);
-  } catch {
-    return [];
+    return {
+      linted: true,
+      findings: relabel(
+        parseOxlintJson(result.stdout),
+        basename(scratch),
+        filePath,
+      ),
+      reason: 'linted',
+    };
+  } catch (error) {
+    return {
+      linted: false,
+      findings: [],
+      reason: `could not lint the pending write: ${String(error)}`,
+    };
   } finally {
-    rmSync(scratch, { recursive: true, force: true });
+    if (scratch !== null) rmSync(scratch, { recursive: true, force: true });
+    for (const segment of [...created].reverse()) {
+      rmSync(segment, { recursive: true, force: true });
+    }
   }
 };
 
-export const lintFile = (root: string, filePath: string): Finding[] => {
+export const lintFile = (root: string, filePath: string): LintOutcome => {
   const bin = localBin(root, 'oxlint');
-  if (!bin) return [];
+  if (!bin) {
+    return { linted: false, findings: [], reason: 'oxlint is not installed' };
+  }
   const result = run(bin, ['--format', 'json', filePath], root);
   try {
-    return parseOxlintJson(result.stdout);
-  } catch {
-    return [];
+    return {
+      linted: true,
+      findings: parseOxlintJson(result.stdout),
+      reason: 'linted',
+    };
+  } catch (error) {
+    return {
+      linted: false,
+      findings: [],
+      reason: `could not read the lint output: ${String(error)}`,
+    };
   }
 };
 
-export const verdictFor = (event: string, findings: Finding[]): HookVerdict => {
-  const errors = errorsOf(findings);
+export const verdictFor = (
+  event: string,
+  outcome: LintOutcome,
+): HookVerdict => {
+  if (!outcome.linted) {
+    return {
+      action: 'allow',
+      findings: [],
+      reason: outcome.reason,
+      linted: false,
+    };
+  }
+  const errors = errorsOf(outcome.findings);
   if (errors.length === 0) {
-    return { action: 'allow', findings: [], reason: 'no blocking findings' };
+    return {
+      action: 'allow',
+      findings: [],
+      reason: 'no blocking findings',
+      linted: true,
+    };
   }
   if (event === 'PreToolUse') {
     return {
       action: 'block',
       findings: errors,
       reason: `${errors.length} violation(s) would land in this file`,
+      linted: true,
     };
   }
   return {
     action: 'report',
     findings: errors,
     reason: `${errors.length} violation(s) in the file just written`,
+    linted: true,
   };
 };
 
@@ -113,14 +191,24 @@ export const evaluate = (root: string, payload: HookPayload): HookVerdict => {
   const event = payload.hook_event_name ?? '';
   const filePath = payload.tool_input?.file_path ?? '';
   if (filePath.length === 0 || !isLintable(filePath)) {
-    return { action: 'allow', findings: [], reason: 'not a TypeScript file' };
+    return {
+      action: 'allow',
+      findings: [],
+      reason: 'not a TypeScript file',
+      linted: false,
+    };
   }
   if (event === 'PreToolUse') {
     const content = payload.tool_input?.content ?? '';
     if (content.length === 0) {
-      return { action: 'allow', findings: [], reason: 'no content to check' };
+      return {
+        action: 'allow',
+        findings: [],
+        reason: 'no content to check',
+        linted: false,
+      };
     }
     return verdictFor(event, lintContent(root, filePath, content));
   }
-  return verdictFor(event, lintFile(root, filePath));
+  return verdictFor(event, lintFile(root, resolveIn(root, filePath)));
 };

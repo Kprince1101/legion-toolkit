@@ -37,8 +37,10 @@ export const readFileOrEmpty = (path: string): string => {
   if (!existsSync(path)) return '';
   try {
     return readFileSync(path, 'utf8');
-  } catch {
-    return '';
+  } catch (error) {
+    throw new Error(
+      `${path} exists but could not be read, so it was left untouched: ${String(error)}`,
+    );
   }
 };
 

@@ -8,6 +8,8 @@ export {
 } from './managed.js';
 export type { MergeOutcome, MergeResult, WriteTarget } from './managed.js';
 export { TARGETS, detectTargets, resolveTargets } from './targets.js';
+export { parseSteerArgs } from './cli-args.js';
+export type { SteerArgs } from './cli-args.js';
 export {
   evaluate,
   parsePayload,
@@ -17,8 +19,10 @@ export {
   lintFile,
   renderFindings,
   relabel,
+  resolveIn,
+  missingAncestors,
 } from './hook.js';
-export type { HookPayload, HookVerdict } from './hook.js';
+export type { HookPayload, HookVerdict, LintOutcome } from './hook.js';
 export {
   mergeSettings,
   registerHooks,

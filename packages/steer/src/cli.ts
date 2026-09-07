@@ -8,6 +8,8 @@ import {
 } from 'legion-rules';
 import type { LegionConfig } from 'legion-rules';
 import { renderBlock } from './block.js';
+import { parseSteerArgs } from './cli-args.js';
+import type { SteerArgs } from './cli-args.js';
 import { evaluate, parsePayload, renderFindings } from './hook.js';
 import { registerHooks } from './settings.js';
 import { checkManagedBlock, writeManagedBlock } from './managed.js';
@@ -18,6 +20,8 @@ const PRESETS: Record<string, LegionConfig> = {
   strict,
   reactNative,
 };
+
+export { PRESETS };
 
 export const HELP = `legion-steer <init|check> [options]
 
@@ -39,61 +43,6 @@ Options
   --no-hooks          skip registering hooks in .claude/settings.json
   --help, -h          this text
 `;
-
-interface SteerArgs {
-  command: 'init' | 'check' | 'hook' | 'help';
-  root: string;
-  preset: string;
-  targets: string[];
-  lint: string;
-  hooks: boolean;
-}
-
-const takeValue = (argv: string[], index: number, flag: string): string => {
-  const value = argv[index + 1];
-  if (value === undefined || value.startsWith('--')) {
-    throw new Error(`${flag} needs a value`);
-  }
-  return value;
-};
-
-export const parseSteerArgs = (argv: string[]): SteerArgs => {
-  const args: SteerArgs = {
-    command: 'help',
-    root: process.cwd(),
-    preset: 'recommended',
-    targets: [],
-    lint: 'yarn lint',
-    hooks: true,
-  };
-  let index = 0;
-  while (index < argv.length) {
-    const arg = argv[index] ?? '';
-    if (arg === 'init') args.command = 'init';
-    else if (arg === 'check') args.command = 'check';
-    else if (arg === 'hook') args.command = 'hook';
-    else if (arg === '--help' || arg === '-h') args.command = 'help';
-    else if (arg === '--root') {
-      args.root = takeValue(argv, index, arg);
-      index += 1;
-    } else if (arg === '--preset') {
-      const value = takeValue(argv, index, arg);
-      if (!PRESETS[value]) {
-        throw new Error('--preset must be recommended, strict or reactNative');
-      }
-      args.preset = value;
-      index += 1;
-    } else if (arg === '--targets') {
-      args.targets = takeValue(argv, index, arg).split(',').filter(Boolean);
-      index += 1;
-    } else if (arg === '--lint') {
-      args.lint = takeValue(argv, index, arg);
-      index += 1;
-    } else throw new Error(`unknown argument: ${arg}`);
-    index += 1;
-  }
-  return args;
-};
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -141,7 +90,13 @@ const readStdin = async (): Promise<string> => {
 const runHook = async (args: SteerArgs): Promise<number> => {
   const payload = parsePayload(await readStdin());
   const verdict = evaluate(resolve(args.root), payload);
-  if (verdict.action === 'allow') return 0;
+  if (verdict.action === 'allow') {
+    if (!verdict.linted && verdict.reason.startsWith('could not')) {
+      console.error(`legion-steer: ${verdict.reason}`);
+      console.error('The write was allowed because the check could not run.');
+    }
+    return 0;
+  }
   console.error(`legion-steer: ${verdict.reason}`);
   console.error(renderFindings(verdict.findings));
   console.error(
