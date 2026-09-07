@@ -61,8 +61,20 @@ const publishedVersion = (name: string): string | null => {
 const packageTag = (pkg: { name: string; version: string }): string =>
   `${pkg.name}@${pkg.version}`;
 
+const localGitTagExists = (tag: string): boolean => {
+  const result = spawnSync(
+    'git',
+    ['rev-parse', '-q', '--verify', `refs/tags/${tag}`],
+    {
+      cwd: root,
+      stdio: 'pipe',
+    },
+  );
+  return result.status === 0;
+};
+
 const createLocalGitTag = (tag: string): void => {
-  const result = spawnSync('git', ['tag', '-f', tag], {
+  const result = spawnSync('git', ['tag', tag], {
     cwd: root,
     stdio: 'inherit',
   });
@@ -84,6 +96,10 @@ const recordReleasedPackage = (pkg: {
   version: string;
 }): void => {
   const tag = packageTag(pkg);
+  if (localGitTagExists(tag)) {
+    console.log(`${tag} is already tagged and released; leaving it alone`);
+    return;
+  }
   createLocalGitTag(tag);
   appendChangesetsGitTagEvent(pkg, tag);
 };
