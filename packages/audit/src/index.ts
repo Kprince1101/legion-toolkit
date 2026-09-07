@@ -49,6 +49,7 @@ export {
   bypassAdvice,
   prAdvice,
   ruleCoverageAdvice,
+  dependencyAdvice,
   yarnMigrationSteps,
   RULE_LESSONS,
   TARGET_YARN,
@@ -58,6 +59,16 @@ export { computeScore, SCORE_WEIGHTS } from './report/score.js';
 export { findRegressions } from './report/baseline.js';
 export { renderMarkdown } from './report/markdown.js';
 export { renderConsole, wrap } from './report/console.js';
+export { renderAnnotations, annotation } from './report/annotations.js';
+export { dependencyCheck, findForbidden } from './checks/dependencies.js';
+export {
+  applySuppressions,
+  buildSuppressions,
+  readSuppressions,
+  writeSuppressions,
+  suppressionKey,
+  SUPPRESSIONS_FILE,
+} from './checks/suppressions.js';
 export { parseArgs, HELP } from './args.js';
 export type { CliArgs, FailOn } from './args.js';
 export type * from './types.js';

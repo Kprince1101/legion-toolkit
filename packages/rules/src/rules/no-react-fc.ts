@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint';
 import type { TSESTree } from '@typescript-eslint/types';
-import type { LegionRuleModule } from '../types.js';
-import { getContext } from '../types.js';
+import type { AnyNode, FixResult, Fixer, LegionRuleModule } from '../types.js';
+import { fixTarget, getContext } from '../types.js';
 
 const FC_NAMES = new Set([
   'FC',
@@ -30,6 +30,7 @@ const rule: LegionRuleModule = {
         'Never React.FC. Declare a component as `export const Name = (props: NameProps) => ...` with a named props interface.',
       standard: 'LEGION-STANDARDS section 0.4, 2',
     },
+    fixable: 'code',
     schema: [],
     messages: {
       noReactFc:
@@ -37,16 +38,58 @@ const rule: LegionRuleModule = {
     },
   },
   create: (context: Rule.RuleContext) => {
-    const { report } = getContext(context);
+    const { sourceCode, report } = getContext(context);
+
+    const annotatedArrow = (
+      node: TSESTree.TSTypeReference,
+    ): {
+      annotation: AnyNode;
+      arrow: TSESTree.ArrowFunctionExpression;
+    } | null => {
+      const annotation = node.parent;
+      if (!annotation || annotation.type !== 'TSTypeAnnotation') return null;
+      const identifier = annotation.parent;
+      if (!identifier || identifier.type !== 'Identifier') return null;
+      const declarator = identifier.parent;
+      if (!declarator || declarator.type !== 'VariableDeclarator') return null;
+      const { init } = declarator;
+      if (!init || init.type !== 'ArrowFunctionExpression') return null;
+      return { annotation: annotation as AnyNode, arrow: init };
+    };
+
+    const buildFix = (node: TSESTree.TSTypeReference) => {
+      const target = annotatedArrow(node);
+      if (target === null) return undefined;
+      const args = node.typeArguments?.params ?? [];
+      if (args.length > 1) return undefined;
+      const { arrow } = target;
+      if (arrow.params.length > 1) return undefined;
+      const [param] = arrow.params;
+      if (param && 'typeAnnotation' in param && param.typeAnnotation) {
+        return undefined;
+      }
+      if (args.length === 1 && !param) return undefined;
+      return (fixer: Fixer): FixResult => {
+        const fixes = [fixer.remove(fixTarget(target.annotation))];
+        const [typeArg] = args;
+        if (typeArg && param) {
+          const text = sourceCode.getText(typeArg as never);
+          fixes.push(fixer.insertTextAfter(fixTarget(param), `: ${text}`));
+        }
+        return fixes;
+      };
+    };
+
     return {
       TSTypeReference: (node: TSESTree.TSTypeReference) => {
         const name = referencedName(node.typeName);
         if (name === null || !FC_NAMES.has(name)) return;
-        report({
-          loc: node.loc,
-          messageId: 'noReactFc',
-          data: { name },
-        });
+        const fix = buildFix(node);
+        if (fix === undefined) {
+          report({ loc: node.loc, messageId: 'noReactFc', data: { name } });
+          return;
+        }
+        report({ loc: node.loc, messageId: 'noReactFc', data: { name }, fix });
       },
     };
   },

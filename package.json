@@ -41,6 +41,7 @@
     "legion-audit": "workspace:*",
     "legion-init": "workspace:*",
     "legion-rules": "workspace:*",
+    "legion-steer": "workspace:*",
     "oxlint": "1.81.0",
     "prettier": "3.9.6",
     "typescript": "6.0.3"

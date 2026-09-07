@@ -28,6 +28,7 @@
   "types": "./index.d.ts",
   "bin": {
     "legion-audit": "./bin/legion-audit.js",
+    "legion-steer": "./bin/legion-steer.js",
     "legion-toolkit": "./bin/legion-toolkit.js"
   },
   "exports": {
@@ -55,7 +56,11 @@
     "./package.json": "./package.json",
     "./presets/recommended.json": "./presets/recommended.json",
     "./presets/strict.json": "./presets/strict.json",
-    "./presets/react-native.json": "./presets/react-native.json"
+    "./presets/react-native.json": "./presets/react-native.json",
+    "./steer": {
+      "types": "./steer.d.ts",
+      "default": "./steer.js"
+    }
   },
   "files": [
     "index.js",
@@ -66,6 +71,8 @@
     "rules.d.ts",
     "audit.js",
     "audit.d.ts",
+    "steer.js",
+    "steer.d.ts",
     "prettier.cjs",
     "presets",
     "tsconfig",
@@ -84,6 +91,7 @@
     "legion-init": "workspace:^",
     "legion-prettier-config": "workspace:^",
     "legion-rules": "workspace:^",
+    "legion-steer": "workspace:^",
     "legion-tsconfig": "workspace:^"
   },
   "peerDependencies": {
@@ -105,7 +113,7 @@
   "scripts": {
     "build": "node ../../scripts/generate-presets.ts && node ../../scripts/copy-license.ts",
     "clean": "node -e \"require('node:fs').rmSync('LICENSE',{force:true}); require('node:fs').rmSync('presets',{recursive:true,force:true})\"",
-    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js && node --check bin/legion-toolkit.js"
+    "typecheck": "node --check index.js && node --check eslint-plugin.js && node --check rules.js && node --check audit.js && node --check prettier.cjs && node --check bin/legion-audit.js && node --check bin/legion-toolkit.js && node --check bin/legion-steer.js && node --check steer.js"
   },
   "engines": {
     "node": ">=22"

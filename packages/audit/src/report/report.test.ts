@@ -80,6 +80,8 @@ const base = (): AuditResult => ({
     source: 'none',
   },
   advice: [],
+  suppressions: { findings: [], suppressed: 0, stale: [], total: 0 },
+  dependencies: { status: 'checked', forbidden: [], inspected: 12 },
 });
 
 const withScore = (result: AuditResult): AuditResult => ({

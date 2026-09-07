@@ -3715,6 +3715,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"legion-steer@workspace:*, legion-steer@workspace:^, legion-steer@workspace:packages/steer":
+  version: 0.0.0-use.local
+  resolution: "legion-steer@workspace:packages/steer"
+  dependencies:
+    legion-rules: "workspace:^"
+  bin:
+    legion-steer: ./dist/cli.js
+  languageName: unknown
+  linkType: soft
+
 "legion-toolkit-monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "legion-toolkit-monorepo@workspace:."
@@ -3732,6 +3742,7 @@ __metadata:
     legion-audit: "workspace:*"
     legion-init: "workspace:*"
     legion-rules: "workspace:*"
+    legion-steer: "workspace:*"
     oxlint: "npm:1.81.0"
     prettier: "npm:3.9.6"
     typescript: "npm:6.0.3"
@@ -3747,6 +3758,7 @@ __metadata:
     legion-init: "workspace:^"
     legion-prettier-config: "workspace:^"
     legion-rules: "workspace:^"
+    legion-steer: "workspace:^"
     legion-tsconfig: "workspace:^"
   peerDependencies:
     eslint: ">=9"
@@ -3761,6 +3773,7 @@ __metadata:
       optional: true
   bin:
     legion-audit: ./bin/legion-audit.js
+    legion-steer: ./bin/legion-steer.js
     legion-toolkit: ./bin/legion-toolkit.js
   languageName: unknown
   linkType: soft

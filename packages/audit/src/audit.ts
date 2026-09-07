@@ -12,7 +12,9 @@ import { runLint } from './checks/lint.js';
 import { expoDoctorGate } from './checks/expo.js';
 import { lockfileCheck } from './checks/lockfile.js';
 import { testCoverage } from './checks/test-coverage.js';
+import { dependencyCheck } from './checks/dependencies.js';
 import { ruleCoverage } from './checks/rule-coverage.js';
+import { applySuppressions, readSuppressions } from './checks/suppressions.js';
 import { detectToolchain } from './checks/toolchain.js';
 import { workspaceContext } from './workspace.js';
 import { listSourceFiles } from './files.js';
@@ -113,6 +115,10 @@ export const runAudit = async (
   const coverage = testCoverage(root, options.ignore);
   log('legion-audit: toolchain');
   const toolchain = detectToolchain(root, packageManager, workspace);
+  log('legion-audit: dependencies');
+  const dependencies = dependencyCheck(root);
+  log('legion-audit: suppressions');
+  const suppressions = applySuppressions(lint.legion, readSuppressions(root));
   log('legion-audit: rule coverage');
   const coverageOfRules = await ruleCoverage(
     root,
@@ -132,6 +138,8 @@ export const runAudit = async (
     expo,
     workspace,
     ruleCoverage: coverageOfRules,
+    suppressions,
+    dependencies,
   };
 
   return {

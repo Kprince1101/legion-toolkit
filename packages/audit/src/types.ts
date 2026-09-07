@@ -65,6 +65,31 @@ export interface PrHygiene {
   forge: Forge;
 }
 
+export interface DependencyFinding {
+  name: string;
+  version: string;
+  reason: string;
+  instead: string;
+}
+
+export interface DependencyResult {
+  status: 'checked' | 'skipped';
+  forbidden: DependencyFinding[];
+  inspected: number;
+}
+
+export interface SuppressionFile {
+  schema: 1;
+  counts: Record<string, number>;
+}
+
+export interface SuppressionResult {
+  findings: Finding[];
+  suppressed: number;
+  stale: string[];
+  total: number;
+}
+
 export interface RuleCoverage {
   status: 'checked' | 'skipped';
   available: string[];
@@ -171,6 +196,8 @@ export interface AuditResult {
   toolchain: Toolchain;
   expo: ExpoDoctorResult;
   ruleCoverage: RuleCoverage;
+  suppressions: SuppressionResult;
+  dependencies: DependencyResult;
   workspace: WorkspaceContext;
   advice: Advice[];
 }

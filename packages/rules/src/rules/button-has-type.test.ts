@@ -13,10 +13,18 @@ runRule('button-has-type', rule, {
   invalid: [
     {
       code: 'export const A = () => <button onClick={go}>Go</button>;',
+      output:
+        'export const A = () => <button type="button" onClick={go}>Go</button>;',
+      errors: [{ messageId: 'missingType' }],
+    },
+    {
+      code: 'export const A = () => <button>Go</button>;',
+      output: 'export const A = () => <button type="button">Go</button>;',
       errors: [{ messageId: 'missingType' }],
     },
     {
       code: 'export const A = () => <button type="buton">Go</button>;',
+      output: null,
       errors: [{ messageId: 'invalidType', data: { value: 'buton' } }],
     },
   ],

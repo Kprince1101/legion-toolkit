@@ -200,7 +200,43 @@ const afterInit = sh(
 expectFinding(afterInit.stdout + afterInit.stderr, 'no-enum');
 expectFinding(afterInit.stdout + afterInit.stderr, 'no-function-keyword');
 
+const auditBin = join(app, 'node_modules', '.bin', 'legion-audit');
+const before = sh(
+  auditBin,
+  ['--json', 'before.json', '--no-deps-audit', '--no-tests', '--quiet'],
+  app,
+  true,
+);
+const beforeReport = JSON.parse(readFileSync(join(app, 'before.json'), 'utf8'));
+if (beforeReport.suppressions.findings.length === 0) {
+  console.error('expected unsuppressed findings before recording suppressions');
+  process.exit(1);
+}
+sh(auditBin, ['suppress', '--quiet'], app);
+if (!existsSync(join(app, '.legion-suppressions.json'))) {
+  console.error('legion-audit suppress wrote no suppressions file');
+  process.exit(1);
+}
+sh(
+  auditBin,
+  ['--json', 'after.json', '--no-deps-audit', '--no-tests', '--quiet'],
+  app,
+  true,
+);
+const afterReport = JSON.parse(readFileSync(join(app, 'after.json'), 'utf8'));
+if (afterReport.suppressions.findings.length !== 0) {
+  console.error(
+    `suppression ratchet left ${afterReport.suppressions.findings.length} finding(s) that were already accepted`,
+  );
+  process.exit(1);
+}
+if (afterReport.suppressions.suppressed !== beforeReport.suppressions.total) {
+  console.error('suppressed count does not match the findings recorded');
+  process.exit(1);
+}
+void before;
+
 console.log(
-  `consumer smoke under ${manager}: plugin ran under oxlint and ESLint, the reactNative preset caught the admin client in a plain lib file, legion-audit wrote a report, and legion-toolkit init produced a config that extends the shipped preset and still catches violations`,
+  `consumer smoke under ${manager}: plugin ran under oxlint and ESLint, the reactNative preset caught the admin client in a plain lib file, legion-audit wrote a report, legion-toolkit init produced a config that extends the shipped preset and still catches violations, and the suppression ratchet accepted ${beforeReport.suppressions.total} existing finding(s) and then reported none`,
 );
 rmSync(work, { recursive: true, force: true });

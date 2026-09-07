@@ -43,6 +43,8 @@ describe('parseArgs', () => {
       runTypecheck: true,
       runFormat: true,
       runExpoDoctor: true,
+      dryRun: false,
+      annotations: false,
       quiet: true,
       ignore: ['fixtures'],
     });

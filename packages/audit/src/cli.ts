@@ -5,7 +5,9 @@ import { HELP, parseArgs } from './args.js';
 import type { CliArgs, FailOn } from './args.js';
 import { runAudit } from './audit.js';
 import { scanDirectives } from './checks/directives.js';
+import { buildSuppressions, writeSuppressions } from './checks/suppressions.js';
 import { findRegressions } from './report/baseline.js';
+import { renderAnnotations } from './report/annotations.js';
 import { renderConsole } from './report/console.js';
 import { renderMarkdown } from './report/markdown.js';
 import type { AuditOptions, AuditResult, Regression } from './types.js';
@@ -26,7 +28,9 @@ const effectiveFailOn = (args: CliArgs): FailOn => {
 
 const hasErrors = (result: AuditResult): boolean => {
   if (result.gates.some((gate) => gate.status === 'fail')) return true;
-  if (result.lint.legion.some((finding) => finding.severity === 'error'))
+  if (
+    result.suppressions.findings.some((finding) => finding.severity === 'error')
+  )
     return true;
   if (result.directives.fileWide.length > 0) return true;
   return result.lockfile.status === 'fail';
@@ -75,6 +79,32 @@ const auditFor = (args: CliArgs, overrides: Partial<AuditOptions> = {}) =>
     ...overrides,
   });
 
+const runSuppress = async (args: CliArgs): Promise<number> => {
+  const result = await auditFor(args, {
+    depsAudit: false,
+    runTests: false,
+    runFormat: false,
+    runTypecheck: false,
+  });
+  const file = buildSuppressions(result.lint.legion);
+  const entries = Object.keys(file.counts).length;
+  const total = Object.values(file.counts).reduce((sum, n) => sum + n, 0);
+  if (args.dryRun) {
+    console.log(
+      `legion-audit suppress: would record ${total} finding(s) across ${entries} file/rule pair(s)`,
+    );
+    return 0;
+  }
+  const path = writeSuppressions(resolve(args.root), file);
+  console.log(
+    `legion-audit suppress: recorded ${total} finding(s) across ${entries} file/rule pair(s) in ${path}`,
+  );
+  console.log(
+    'Existing findings are now accepted. New ones fail --fail-on error.',
+  );
+  return 0;
+};
+
 const runAdvice = async (args: CliArgs): Promise<number> => {
   const result = await auditFor(args, {
     depsAudit: false,
@@ -96,6 +126,10 @@ const runFull = async (args: CliArgs): Promise<number> => {
   else console.log(markdown);
   if (args.json)
     writeFileSync(resolve(args.json), `${JSON.stringify(result, null, 2)}\n`);
+  if (args.annotations) {
+    const annotations = renderAnnotations(result);
+    if (annotations.length > 0) console.log(annotations);
+  }
   if (!args.quiet) console.error(renderConsole(result));
   if (args.md && !args.quiet) {
     console.error(`legion-audit: report written to ${args.md}`);
@@ -118,6 +152,7 @@ const main = async (): Promise<number> => {
   }
   if (args.command === 'directives') return runDirectives(args);
   if (args.command === 'advice') return runAdvice(args);
+  if (args.command === 'suppress') return runSuppress(args);
   return runFull(args);
 };
 
