@@ -58,11 +58,10 @@ const publishedVersion = (name: string): string | null => {
   return result.stdout.trim();
 };
 
-// changesets/action sets CHANGESETS_OUTPUT to a path and expects one
-// newline-delimited JSON event per package it should tag/release. Without
-// this, npm publishing still works, but the action silently skips creating
-// git tags and GitHub releases (it only logs a warning).
-const recordGitTag = (pkg: { name: string; version: string }): void => {
+const appendChangesetsGitTagEvent = (pkg: {
+  name: string;
+  version: string;
+}): void => {
   const outputPath = process.env.CHANGESETS_OUTPUT;
   if (!outputPath) return;
   const event = {
@@ -73,13 +72,15 @@ const recordGitTag = (pkg: { name: string; version: string }): void => {
   appendFileSync(outputPath, `${JSON.stringify(event)}\n`, 'utf8');
 };
 
-assertAuthenticated();
+const initializeChangesetsOutputFileSoAnEmptyRunStillReadsCleanly =
+  (): void => {
+    const outputPath = process.env.CHANGESETS_OUTPUT;
+    if (!outputPath) return;
+    writeFileSync(outputPath, '', 'utf8');
+  };
 
-// Create the output file up front so changesets/action can always read it,
-// even on a run where nothing ends up being published.
-if (process.env.CHANGESETS_OUTPUT) {
-  writeFileSync(process.env.CHANGESETS_OUTPUT, '', 'utf8');
-}
+assertAuthenticated();
+initializeChangesetsOutputFileSoAnEmptyRunStillReadsCleanly();
 
 const order = [
   'tsconfig',
@@ -122,7 +123,7 @@ for (const dir of sorted) {
     },
   );
   if (publish.status !== 0) process.exit(publish.status ?? 1);
-  recordGitTag(pkg);
+  appendChangesetsGitTagEvent(pkg);
   published += 1;
 }
 console.log(`published ${published} package(s)`);
