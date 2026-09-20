@@ -28,12 +28,12 @@
     "generate:presets": "node scripts/generate-presets.ts"
   },
   "devDependencies": {
-    "@changesets/cli": "3.0.2",
+    "@changesets/cli": "3.0.3",
     "@swc/core": "^1.15.0",
     "@swc/jest": "0.2.39",
     "@types/eslint": "9.6.1",
     "@types/jest": "30.0.0",
-    "@types/node": "^22.20.2",
+    "@types/node": "^22.20.3",
     "@typescript-eslint/parser": "8.70.0",
     "@typescript-eslint/types": "8.70.0",
     "eslint": "10.10.0",
@@ -42,8 +42,8 @@
     "legion-init": "workspace:*",
     "legion-rules": "workspace:*",
     "legion-steer": "workspace:*",
-    "oxlint": "1.82.0",
-    "prettier": "3.9.6",
+    "oxlint": "1.83.0",
+    "prettier": "3.9.8",
     "typescript": "6.0.3"
   },
   "engines": {
