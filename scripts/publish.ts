@@ -141,7 +141,7 @@ for (const dir of sorted) {
     continue;
   }
   const tarball = resolve(tmpdir(), `${pkg.name}-${pkg.version}.tgz`);
-  const pack = spawnSync('yarn', ['pack', '--out', tarball], {
+  const pack = spawnSync('pnpm', ['pack', '--out', tarball], {
     cwd: resolve(packagesDir, dir),
     stdio: 'inherit',
     env: process.env,

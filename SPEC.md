@@ -4,7 +4,7 @@ Spec sheet. Written 2026-09-06, build starts 2026-09-07.
 
 ## What it is
 
-LEGION-STANDARDS.md as installable packages. One Yarn 4 monorepo, one rule
+LEGION-STANDARDS.md as installable packages. One pnpm monorepo, one rule
 engine, three consumers: a lint plugin that runs under oxlint and ESLint, an
 audit CLI that produces the repo scorecard mechanically, and two config
 packages that complete the set. Public on npm and GitHub, MIT, copyright
@@ -46,8 +46,8 @@ and most repos have neither. This replaces both with `yarn add -D`.
 
 ```
 legion-toolkit/
-  package.json            private, workspaces, yarn@4.18.0
-  .yarnrc.yml             nodeLinker: node-modules
+  package.json            private, pnpm@10.34.7
+  pnpm-workspace.yaml     packages/*, engineStrict
   .oxlintrc.json          dogfoods eslint-plugin-legion via jsPlugins
   .prettierrc.json        consumes legion-prettier-config
   tsconfig.json           consumes legion-tsconfig
@@ -449,19 +449,19 @@ manager, and asks before running it.
 
 Two different questions with two different answers.
 
-**Contributing to this repo: Yarn 4 only.** `packageManager: yarn@4.18.0`
-in the root `package.json` is the enforcement. pnpm 9+ reads that field and
-refuses to run when it names a different manager (default
-`package-manager-strict: true`), so `pnpm install` in a clone fails before
-it touches anything. A root `preinstall` script
-(`scripts/require-yarn.mjs`, checks `npm_config_user_agent`) covers npm
-the same way. CI uses corepack and `yarn install --immutable`.
+**Contributing to this repo: pnpm 10 only.** `packageManager: pnpm@10.34.7`
+in the root `package.json` is the enforcement. Corepack reads that field
+and refuses to run Yarn when it names a different manager, so `yarn
+install` in a clone fails before it touches anything. A root `preinstall`
+script (`scripts/require-pnpm.ts`, checks `npm_config_user_agent`) covers
+npm and any Yarn not run through corepack. CI uses `pnpm/action-setup`
+and `pnpm install --frozen-lockfile`.
 
 **Consuming the packages: Yarn, npm, and pnpm all supported, proven in
 CI.** Nothing in the packages depends on the installer: subpath exports
 resolve the same everywhere, the umbrella ships its own `legion-audit`
 bin, and there are no runtime deps to hoist. A consumer smoke matrix in
-`ci.yml` runs `npm pack` on every package, installs the tarballs into a
+`ci.yml` runs `pnpm pack` on every package, installs the tarballs into a
 fixture Next app under Yarn 4, npm, and pnpm, and in each runs the plugin
 through oxlint and ESLint and runs `legion-audit`. The README claims
 support for exactly the three managers that matrix is green on.
@@ -471,7 +471,7 @@ support for exactly the three managers that matrix is green on.
 | Tool       | Version                  | Note                                                                                                                                             |
 | ---------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Node       | 22 LTS floor, 24 in CI   | `engines.node >= 22`                                                                                                                             |
-| Yarn       | 4.18.0                   | corepack, `nodeLinker: node-modules`                                                                                                             |
+| pnpm       | 10.34.7                  | `pnpm/action-setup` in CI, corepack locally, strict `node_modules` layout                                                                        |
 | TypeScript | 6.x                      | 7.0 is out (Go compiler) but the ESLint parser story for it is unverified; evaluate after 0.1.0                                                  |
 | oxlint     | 1.81.0                   | JS plugins alpha since 1.53.0 (2026-03-11), ESLint v9 API compatible, `--format json`, built-in `max-lines` with `skipBlankLines`/`skipComments` |
 | ESLint     | 10.x devDep, `>= 9` peer | for `RuleTester` and the equivalence test                                                                                                        |
@@ -516,7 +516,7 @@ Legion alike.
   approving review required, no force pushes, rules apply to admins.
 - `CODEOWNERS` with `* @Kprince1101`, so every PR requires Legion's review
   automatically.
-- `CONTRIBUTING.md`: how to run `yarn validate`, PRs need a changeset, the
+- `CONTRIBUTING.md`: how to run `pnpm validate`, PRs need a changeset, the
   comment rule and the component cap apply to contributions and are
   enforced by lint, not by review.
 - `.github/PULL_REQUEST_TEMPLATE.md`: what changed, why, what was verified.
@@ -636,7 +636,7 @@ without review.
 The build is done when all of these are true against the actual repo, not
 the description of it:
 
-- `yarn validate` is green in CI on `main`.
+- `pnpm validate` is green in CI on `main`.
 - The plugin reports identical diagnostics under oxlint and ESLint on the
   fixtures.
 - The consumer smoke matrix is green under Yarn 4, npm, and pnpm.

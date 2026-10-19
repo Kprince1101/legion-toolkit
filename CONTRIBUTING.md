@@ -1,22 +1,22 @@
 # Contributing
 
 Thanks for looking. This repo is small and opinionated; the opinions are
-enforced by the build, so most of what you need to know is what `yarn
+enforced by the build, so most of what you need to know is what `pnpm
 validate` checks.
 
 ## Setup
 
-Node 22 or newer and Yarn 4 through corepack. Other package managers are
+Node 22 or newer and pnpm 10 through corepack. Other package managers are
 refused at install time on purpose (the published packages work under all
-of them; the repo itself is Yarn only).
+of them; the repo itself is pnpm only).
 
 ```sh
 corepack enable
-yarn install
-yarn validate
+pnpm install
+pnpm validate
 ```
 
-`yarn validate` runs, in order: build, typecheck, the `.oxlintrc.json` sync
+`pnpm validate` runs, in order: build, typecheck, the `.oxlintrc.json` sync
 check, lint (the repo lints itself with its own plugin), Prettier, the
 umbrella and metadata checks, and the tests.
 
@@ -46,7 +46,7 @@ rule; open an issue rather than a bypass.
 Branch from `main`, keep the change to one concern, and add a changeset:
 
 ```sh
-yarn changeset
+pnpm changeset
 ```
 
 Say what changed, why, and what you verified. CI must be green. A maintainer
