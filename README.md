@@ -82,13 +82,13 @@ at 2, `strict` at 3.
 ## Zero dependencies, three package managers
 
 No published package has a third-party runtime dependency. The packages are
-built and tested here with Yarn 4, and CI installs the packed tarballs into a
+built and tested here with pnpm 10, and CI installs the packed tarballs into a
 fixture app under Yarn, npm, and pnpm and runs the plugin and the audit in
 each.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The short version: Yarn 4, `yarn
+See [CONTRIBUTING.md](CONTRIBUTING.md). The short version: pnpm 10, `pnpm
 validate` must be green, PRs need a changeset, and the rules apply to this
 repo too (it lints itself with its own plugin).
 

@@ -1,8 +1,7 @@
 node_modules
 dist
 coverage
-.yarn
-yarn.lock
+pnpm-lock.yaml
 CHANGELOG.md
 fixtures
 AUDIT.md

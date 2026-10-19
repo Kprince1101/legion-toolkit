@@ -13,7 +13,6 @@ const config = {
     'node_modules/**',
     '**/dist/**',
     'coverage/**',
-    '.yarn/**',
     'fixtures/**',
     '**/*.d.ts',
   ],
@@ -29,7 +28,7 @@ try {
 
 if (checkOnly) {
   if (current !== next) {
-    console.error('.oxlintrc.json is out of date; run `yarn sync:oxlintrc`.');
+    console.error('.oxlintrc.json is out of date; run `pnpm sync:oxlintrc`.');
     process.exit(1);
   }
   console.log('.oxlintrc.json is in sync with the strict preset');

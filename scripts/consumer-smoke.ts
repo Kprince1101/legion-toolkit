@@ -52,16 +52,8 @@ cpSync(resolve(root, 'fixtures', 'consumer'), app, { recursive: true });
 renameSync(join(app, 'oxlintrc.template.json'), join(app, '.oxlintrc.json'));
 
 sh(
-  'yarn',
-  [
-    'workspaces',
-    'foreach',
-    '-A',
-    '--no-private',
-    'pack',
-    '--out',
-    join(tarballs, '%s.tgz'),
-  ],
+  'pnpm',
+  ['--filter', './packages/*', 'pack', '--out', join(tarballs, '%s.tgz')],
   root,
 );
 
