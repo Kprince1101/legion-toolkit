@@ -15,6 +15,7 @@ export interface Marker {
   status: MarkerStatus;
   at: number;
   original: string;
+  head?: string;
 }
 
 export interface MarkerKeySource {

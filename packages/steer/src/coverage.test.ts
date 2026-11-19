@@ -37,6 +37,16 @@ const NODE_GEN =
 const PYTHON_GEN =
   "open('src/frompython.ts', 'w').write('export enum FromPython {\\n  A,\\n}\\n')\n";
 
+const GIT_IDENTITY = {
+  GIT_AUTHOR_NAME: 'legion-steer',
+  GIT_AUTHOR_EMAIL: 'steer@example.invalid',
+  GIT_COMMITTER_NAME: 'legion-steer',
+  GIT_COMMITTER_EMAIL: 'steer@example.invalid',
+  GIT_CONFIG_COUNT: '1',
+  GIT_CONFIG_KEY_0: 'commit.gpgsign',
+  GIT_CONFIG_VALUE_0: 'false',
+};
+
 const withOxlint = (name: string, body: () => void): void => {
   if (HAS_OXLINT) {
     describe(name, body);
@@ -133,6 +143,7 @@ const throughBash = (dir: string, command: string): HookVerdict => {
   const ran = spawnSync('bash', ['-c', command], {
     cwd: dir,
     encoding: 'utf8',
+    env: { ...process.env, ...GIT_IDENTITY },
   });
   expect({ status: ran.status, stderr: ran.stderr }).toMatchObject({
     status: 0,
@@ -358,6 +369,40 @@ withOxlint('Bash writes, checked after the command runs', () => {
       action: 'allow',
       notices: [],
     });
+  });
+
+  it('reports a file the command writes and commits in one go', () => {
+    const verdict = throughBash(
+      dir,
+      "cat <<'EOF' > src/committed.ts\nexport enum Committed {\n  A,\n}\nEOF\ngit add -A && git commit -q -m wip",
+    );
+    expect(verdict.action).toBe('report');
+    expect(rulesOf(verdict)).toContain('legion/no-enum');
+  });
+
+  it('judges a committed edit against the commit the command started from', () => {
+    const verdict = throughBash(
+      dir,
+      "sed -i.bak 's/const answer = 42;/enum Answer { A }/' src/answer.ts && rm src/answer.ts.bak && git commit -q -am wip",
+    );
+    expect(verdict.action).toBe('report');
+    expect(rulesOf(verdict)).toEqual(['legion/no-enum']);
+  });
+
+  it('says so when HEAD moved and the starting commit is gone', () => {
+    const verdict = throughBash(
+      dir,
+      "echo 'export enum Gone { A }' > src/gone.ts && git add -A && git commit -q --amend -m rewritten && git reflog expire --expire=now --all && git gc -q --prune=now",
+    );
+    expect(verdict.notices.join('\n')).toContain('can no longer be found');
+  });
+
+  it('warns when a command changes the lint config', () => {
+    const verdict = throughBash(dir, `echo '{"rules":{}}' > .oxlintrc.json`);
+    expect(verdict.action).toBe('allow');
+    expect(verdict.notices.join('\n')).toContain(
+      '.oxlintrc.json is lint config',
+    );
   });
 
   it('does not see a file written where git ignores it', () => {

@@ -4,7 +4,7 @@ import { ESLINT_CONFIGS, OXLINT_CONFIGS } from 'legion-audit';
 import type { Finding } from 'legion-audit';
 import { reviewBypasses } from './bypass.js';
 import type { BypassReview } from './bypass.js';
-import { changedSince, committedContent } from './changes.js';
+import { changedSince, committedContent, headOf } from './changes.js';
 import { errorsOf, introduced } from './delta.js';
 import { pendingContent } from './edits.js';
 import type { EditInput } from './edits.js';
@@ -321,23 +321,33 @@ const postBash = (root: string, payload: HookPayload): HookVerdict => {
       'it could not tell which files the command wrote, and they were not checked',
     );
   }
-  const changes = changedSince(root, marker.at);
+  const changes = changedSince(root, marker.at, marker.head ?? '');
   if (!changes.ok) return stepAside(changes.reason, 'they were not checked');
+  const notices = [
+    ...changes.notices,
+    ...changes.files.flatMap((file) => configNotices(root, file)),
+  ];
   const written = changes.files.filter(isLintable);
-  if (written.length === 0) return allow('the command wrote no lintable files');
-  return mergeVerdicts(
-    written.map((file) => {
-      const verdict = judge(
+  if (written.length === 0) {
+    return allow('the command wrote no lintable files', notices);
+  }
+  const verdict = mergeVerdicts(
+    written.map((file) =>
+      prefixed(
         root,
         file,
-        'PostToolUse',
-        committedContent(changes.top, file),
-        readNow(file),
-        lintFile(root, file),
-      );
-      return prefixed(root, file, verdict);
-    }),
+        judge(
+          root,
+          file,
+          'PostToolUse',
+          committedContent(changes.top, file, changes.base),
+          readNow(file),
+          lintFile(root, file),
+        ),
+      ),
+    ),
   );
+  return withNotices(verdict, notices);
 };
 
 const backgroundNotices = (payload: HookPayload): string[] => {
@@ -353,7 +363,12 @@ const evaluateBash = (
   payload: HookPayload,
 ): HookVerdict => {
   if (event === 'PreToolUse') {
-    writeMarker(payload, { status: 'started', at: Date.now(), original: '' });
+    writeMarker(payload, {
+      status: 'started',
+      at: Date.now(),
+      original: '',
+      head: headOf(root) ?? '',
+    });
     return allow('noted when the command started');
   }
   if (event === 'PostToolUse') {

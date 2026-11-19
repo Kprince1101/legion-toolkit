@@ -107,28 +107,29 @@ A clean write of a checked file produces no output at all.
 
 Each row has a test in `src/coverage.test.ts`.
 
-| write path                                         | status         | how                                                                                             |
-| -------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------- |
-| `Write`                                            | covered        | content linted before it lands                                                                  |
-| `Edit`                                             | covered        | edit replayed on the file on disk, result linted before it lands                                |
-| `MultiEdit`                                        | covered        | edits replayed in order, result linted before it lands                                          |
-| `Edit` or `MultiEdit` the hook cannot replay       | after the fact | announced, then the file is linted right after it lands                                         |
-| `NotebookEdit`                                     | not covered    | announced every time                                                                            |
-| writes made by subagents                           | covered        | Claude Code fires the same hooks for a subagent's tool calls; the payload is judged identically |
-| Bash: `echo` or `cat` redirection, heredoc, append | after the fact | files git sees changed since the command started are linted and reported                        |
-| Bash: `sed -i`                                     | after the fact | same                                                                                            |
-| Bash: a node or python script writing a file       | after the fact | same                                                                                            |
-| `.js`, `.jsx`, `.mjs`, `.cjs`                      | covered        | linted like TypeScript                                                                          |
-| lint config (`.oxlintrc.json`, `eslint.config.*`)  | not covered    | announced; a JavaScript config is still linted as code, but what it turns off is not judged     |
-| oxlint missing                                     | not covered    | announced                                                                                       |
-| broken lint config, or a plugin that will not load | not covered    | announced; before this, it passed as clean                                                      |
-| a path the lint config ignores                     | not covered    | announced; before this, it passed as clean                                                      |
-| a new directory                                    | covered        | created for the scratch copy, then removed                                                      |
-| a fresh git worktree with no install               | not covered    | announced as oxlint missing                                                                     |
-| a monorepo subpackage                              | covered        | nearest config wins, including when the session starts inside the subpackage                    |
-| scoped bypass of a locked rule, or with no reason  | covered        | `legion/scoped-disables` blocks it                                                              |
-| scoped, explained bypass of an unlocked rule       | allowed        | the config permits it; the hook announces it                                                    |
-| file-wide bypass (`/* eslint-disable */`)          | covered        | blocked by the hook itself, whatever the config says, from Write, Edit or Bash                  |
+| write path                                         | status         | how                                                                                                                                      |
+| -------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `Write`                                            | covered        | content linted before it lands                                                                                                           |
+| `Edit`                                             | covered        | edit replayed on the file on disk, result linted before it lands                                                                         |
+| `MultiEdit`                                        | covered        | edits replayed in order, result linted before it lands                                                                                   |
+| `Edit` or `MultiEdit` the hook cannot replay       | after the fact | announced, then the file is linted right after it lands                                                                                  |
+| `NotebookEdit`                                     | not covered    | announced every time                                                                                                                     |
+| writes made by subagents                           | covered        | Claude Code fires the same hooks for a subagent's tool calls; the payload is judged identically                                          |
+| Bash: `echo` or `cat` redirection, heredoc, append | after the fact | files git sees changed since the command started are linted and reported                                                                 |
+| Bash: `sed -i`                                     | after the fact | same                                                                                                                                     |
+| Bash: a node or python script writing a file       | after the fact | same                                                                                                                                     |
+| Bash: write and `git commit` in one command        | after the fact | files changed since the commit the command started from are linted against that commit; if HEAD moved and that commit is gone, announced |
+| `.js`, `.jsx`, `.mjs`, `.cjs`                      | covered        | linted like TypeScript                                                                                                                   |
+| lint config (`.oxlintrc.json`, `eslint.config.*`)  | not covered    | announced, from Write, Edit or Bash; a JavaScript config is still linted as code, but what it turns off is not judged                    |
+| oxlint missing                                     | not covered    | announced                                                                                                                                |
+| broken lint config, or a plugin that will not load | not covered    | announced; before this, it passed as clean                                                                                               |
+| a path the lint config ignores                     | not covered    | announced; before this, it passed as clean                                                                                               |
+| a new directory                                    | covered        | created for the scratch copy, then removed                                                                                               |
+| a fresh git worktree with no install               | not covered    | announced as oxlint missing                                                                                                              |
+| a monorepo subpackage                              | covered        | nearest config wins, including when the session starts inside the subpackage                                                             |
+| scoped bypass of a locked rule, or with no reason  | covered        | `legion/scoped-disables` blocks it                                                                                                       |
+| scoped, explained bypass of an unlocked rule       | allowed        | the config permits it; the hook announces it                                                                                             |
+| file-wide bypass (`/* eslint-disable */`)          | covered        | blocked by the hook itself, whatever the config says, from Write, Edit or Bash                                                           |
 
 ### What it does not catch
 
@@ -145,7 +146,10 @@ Each row has a test in `src/coverage.test.ts`.
   `run_in_background` is at launch (announced).
 - **Bash attribution is by modification time.** A file another process
   touches while the command runs is checked as if the command wrote it,
-  and reported against what is committed at `HEAD`.
+  and reported against the commit the command started from.
+- **Commits rewritten out from under the hook.** If a command moves HEAD
+  and the commit it started from no longer exists (an amend followed by
+  `git gc --prune=now`), files it committed are not listed (announced).
 - **Anything when oxlint cannot run**: not installed, including a fresh
   worktree before `install`; no config; a config it cannot load; a path the
   config ignores. Each is announced.

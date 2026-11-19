@@ -45,7 +45,9 @@ export { errorsOf, introduced } from './delta.js';
 export {
   changedSince,
   committedContent,
+  headOf,
   parsePorcelain,
+  sinceStart,
   MTIME_SLACK_MS,
 } from './changes.js';
 export type { Changes } from './changes.js';
