@@ -76,7 +76,10 @@ describe('prepareScoring', () => {
   });
 
   it('lints the scoring copy without the agent bypasses', () => {
-    expect(prepareScoring(paths(), true)).toEqual(['app/Bad.tsx']);
+    expect(prepareScoring(paths(), true)).toEqual({
+      stripped: ['app/Bad.tsx'],
+      removedConfigs: [],
+    });
     const scored = readFileSync(
       join(root, 'scoring', 'app', 'Bad.tsx'),
       'utf8',
@@ -92,10 +95,40 @@ describe('prepareScoring', () => {
   });
 
   it('keeps the bypasses for the as-written pass', () => {
-    expect(prepareScoring(paths(), false)).toEqual([]);
+    expect(prepareScoring(paths(), false).stripped).toEqual([]);
     expect(
       readFileSync(join(root, 'scoring', 'app', 'Bad.tsx'), 'utf8'),
     ).toContain('/* eslint-disable */');
+    clearScoring(join(root, 'scoring'));
+  });
+
+  it('replaces every lint config the agent wrote with the reference', () => {
+    const configs = [
+      '.oxlintrc.json',
+      'app/.oxlintrc.json',
+      'app/stats/.oxlintrc.jsonc',
+      'oxlint.config.ts',
+      'lib/oxlint.config.mjs',
+      'eslint.config.js',
+      'app/.eslintrc.json',
+      '.eslintrc',
+    ];
+    for (const config of configs) {
+      mkdirSync(join(root, 'workspace', config, '..'), { recursive: true });
+      writeFileSync(
+        join(root, 'workspace', config),
+        '{"ignorePatterns":["**/*"]}',
+      );
+    }
+    const copy = prepareScoring(paths(), true);
+    expect([...copy.removedConfigs].sort()).toEqual([...configs].sort());
+    for (const config of configs.slice(1)) {
+      expect(existsSync(join(root, 'scoring', config))).toBe(false);
+      expect(existsSync(join(root, 'workspace', config))).toBe(true);
+    }
+    expect(readFileSync(join(root, 'scoring', '.oxlintrc.json'), 'utf8')).toBe(
+      '{}',
+    );
     clearScoring(join(root, 'scoring'));
   });
 });

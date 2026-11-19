@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { lintConfigsIn } from './lintconfig.ts';
 import { filesUnder, sha256 } from './tree.ts';
 
 export const GUARDED_PATHS = [
@@ -42,10 +43,12 @@ const scriptsHash = (root: string): string | null => {
 
 export const hashGuards = (root: string): GuardHashes => {
   const hashes: GuardHashes = {};
-  for (const path of GUARDED_PATHS) {
-    for (const file of filesUnder(root, path)) {
-      hashes[file] = sha256(readFileSync(join(root, file)));
-    }
+  const files = [
+    ...GUARDED_PATHS.flatMap((path) => filesUnder(root, path)),
+    ...lintConfigsIn(root),
+  ];
+  for (const file of files) {
+    hashes[file] = sha256(readFileSync(join(root, file)));
   }
   const scripts = scriptsHash(root);
   if (scripts !== null) hashes[SCRIPTS_KEY] = scripts;

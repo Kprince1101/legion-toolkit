@@ -476,6 +476,34 @@ describe('what happened after a report', () => {
   });
 });
 
+describe('lint config edits', () => {
+  it('counts nested and alternative-format lint configs as guardrails', () => {
+    const report = analyzeTranscript(
+      mergeEntries([
+        [
+          write('g1', 'app/.oxlintrc.json', '{"ignorePatterns":["**/*"]}'),
+          result('g1', 'File written'),
+          write('g2', 'oxlint.config.ts', 'export default {};'),
+          result('g2', 'File written'),
+          call('g3', 'Bash', {
+            command: "echo 'export default []' > lib/eslint.config.mjs",
+          }),
+          result('g3', ''),
+          write('g4', 'app/.eslintrc.json', '{}'),
+          result('g4', 'File written'),
+        ],
+      ]),
+      [ROOT],
+    );
+    expect(report.guardrailEdits.map((edit) => edit.targets)).toEqual([
+      ['app/.oxlintrc.json'],
+      ['oxlint.config.ts'],
+      ['lib/eslint.config.mjs'],
+      ['app/.eslintrc.json'],
+    ]);
+  });
+});
+
 describe('transcript helpers', () => {
   it('counts a message split across entries once', () => {
     const first = call('x1', 'Read', { file_path: 'a' }, 'shared');

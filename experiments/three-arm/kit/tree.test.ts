@@ -111,4 +111,23 @@ describe('guards', () => {
       'AGENTS.md',
     ]);
   });
+
+  it('notices lint configs added or changed at any depth, in any format', () => {
+    put('app/stats/oxlint.config.ts', 'export default {};\n');
+    const before = hashGuards(root);
+    put('app/.oxlintrc.json', '{"ignorePatterns":["**/*"]}');
+    put('lib/eslint.config.mjs', 'export default [];\n');
+    put('app/.eslintrc.json', '{}');
+    put('app/stats/oxlint.config.ts', 'export default { rules: {} };\n');
+    put('node_modules/next/.oxlintrc.json', '{}');
+    expect(compareGuards(before, hashGuards(root))).toEqual({
+      changed: ['app/stats/oxlint.config.ts'],
+      added: [
+        'app/.eslintrc.json',
+        'app/.oxlintrc.json',
+        'lib/eslint.config.mjs',
+      ],
+      removed: [],
+    });
+  });
 });

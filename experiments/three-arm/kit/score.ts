@@ -10,6 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { removeLintConfigs } from './lintconfig.ts';
 import { errorsByFile } from './lintstate.ts';
 import type { LintCheckpoint } from './lintstate.ts';
 import { summarizeAudit } from './reports.ts';
@@ -66,21 +67,27 @@ export const clearScoring = (scoringDir: string): void => {
   rmSync(scoringDir, { recursive: true, force: true });
 };
 
+export interface ScoringCopy {
+  stripped: string[];
+  removedConfigs: string[];
+}
+
 export const prepareScoring = (
   paths: ScoringPaths,
   stripBypasses: boolean,
-): string[] => {
+): ScoringCopy => {
   clearScoring(paths.scoringDir);
   copySource(paths.workspace, paths.scoringDir);
   let stripped: string[] = [];
   if (stripBypasses) stripped = stripDirectivesIn(paths.scoringDir);
+  const removedConfigs = removeLintConfigs(paths.scoringDir);
   copyFileSync(paths.referenceConfig, join(paths.scoringDir, '.oxlintrc.json'));
   symlinkSync(
     join(paths.repoDir, 'node_modules'),
     join(paths.scoringDir, 'node_modules'),
     'dir',
   );
-  return stripped;
+  return { stripped, removedConfigs };
 };
 
 export const withDirectivesFrom = (

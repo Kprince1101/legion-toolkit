@@ -16,7 +16,7 @@ const FINDING_LINE = /^\s+(\S+):(\d+)\s{2,}(.+)$/;
 const BYPASS = /(?:eslint|oxlint)-disable|@ts-(?:ignore|expect-error|nocheck)/;
 const SOURCE_FILE = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
 const GUARDRAIL_FILE =
-  /(?:^|\/)(?:\.oxlintrc\.json|\.claude\/settings(?:\.local)?\.json|CLAUDE(?:\.local)?\.md|AGENTS\.md|playwright\.config\.ts)$|(?:^|\/)acceptance\//;
+  /(?:^|\/)(?:\.oxlintrc(?:\.jsonc?)?|oxlint\.config\.[cm]?[jt]s|eslint\.config\.[cm]?[jt]s|\.eslintrc(?:\.(?:json|jsonc|js|cjs|mjs|yml|yaml))?|\.claude\/settings(?:\.local)?\.json|CLAUDE(?:\.local)?\.md|AGENTS\.md|playwright\.config\.ts)$|(?:^|\/)acceptance\//;
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit']);
 const COMMAND_PREVIEW = 200;
 const COUNT_PLACEHOLDER = 987654321;
