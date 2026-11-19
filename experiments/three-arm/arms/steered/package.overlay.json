@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "lint": "legion-audit directives && oxlint ."
+  },
+  "devDependencies": {
+    "legion-toolkit": "0.5.0",
+    "oxlint": "1.89.0"
+  }
+}

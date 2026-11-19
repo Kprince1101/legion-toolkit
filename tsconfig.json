@@ -6,7 +6,7 @@
     "checkJs": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
-  "include": ["scripts", "jest.config.mjs"]
+  "include": ["scripts", "jest.config.mjs", "experiments/three-arm/kit"]
 }

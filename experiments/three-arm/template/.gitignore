@@ -1,0 +1,9 @@
+node_modules/
+.next/
+data/
+test-results/
+playwright-report/
+next-env.d.ts
+*.tsbuildinfo
+.kit-acceptance/
+playwright.kit.config.ts
