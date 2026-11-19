@@ -36,6 +36,16 @@ const kitCommit = (): string | null => {
   return result.stdout.trim();
 };
 
+const kitDirty = (): boolean | null => {
+  const result = spawnSync(
+    'git',
+    ['status', '--porcelain', '--untracked-files=no'],
+    { cwd: REPO_DIR, encoding: 'utf8' },
+  );
+  if (result.status !== 0) return null;
+  return result.stdout.trim().length > 0;
+};
+
 const userLevelFiles = (): string[] =>
   [DEFAULT_CONFIG_DIR, configDir()].flatMap((directory) => [
     join(directory, 'settings.json'),
@@ -62,9 +72,11 @@ const runSetup = (args: KitArgs): number => {
     arm: required(args.arm, '--arm'),
     runDir,
     kitDir: KIT_DIR,
+    repoDir: REPO_DIR,
     toolkit: args.toolkit,
     install: args.install,
     kitCommit: kitCommit(),
+    kitDirty: kitDirty(),
     log,
   });
   return 0;

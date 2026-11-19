@@ -4,6 +4,16 @@ import type { AcceptanceSummary, AuditSummary, StepResult } from './reports.ts';
 import type { TranscriptReport } from './transcript.ts';
 import type { FileSize } from './tree.ts';
 
+export type ToolkitSource = 'checkout' | 'npm';
+
+export interface ToolkitInstall {
+  source: ToolkitSource;
+  spec: string;
+  legionSteer: string | null;
+  commit: string | null;
+  dirty: boolean | null;
+}
+
 export interface RunMeta {
   schema: 1;
   arm: Arm;
@@ -11,7 +21,8 @@ export interface RunMeta {
   workspace: string;
   createdAt: string;
   kitCommit: string | null;
-  toolkit: string | null;
+  kitDirty: boolean | null;
+  toolkit: ToolkitInstall | null;
 }
 
 export interface StepLint {
@@ -27,6 +38,7 @@ export interface RunRecord {
   arm: Arm;
   runId: string;
   collectedAt: string;
+  hook: ToolkitInstall | null;
   acceptance: AcceptanceSummary;
   audit: AuditSummary | null;
   auditError: string | null;

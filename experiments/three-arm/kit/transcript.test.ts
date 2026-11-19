@@ -1,7 +1,16 @@
 import {
+  BYPASS_PENDING,
+  BYPASS_WRITTEN,
+  HOOK_PREFIX,
+  violationsCommandWrote,
+  violationsPending,
+  violationsWritten,
+} from '../../../packages/steer/src/reasons.ts';
+import {
   agentOf,
   analyzeTranscript,
   hookKind,
+  hookMatch,
   mergeEntries,
   parseFindings,
   parseJsonl,
@@ -117,14 +126,14 @@ describe('analyzeTranscript', () => {
       blocks.map((event) => [event.file, event.outcome, event.afterCompaction]),
     ).toEqual([
       ['app/Panel.tsx', 'bypassed', false],
-      ['app/Stats.tsx', 'shell-write', false],
+      ['app/Stats.tsx', 'shell-write-unflagged', false],
       ['lib/streaks.ts', 'flagged-again', false],
       ['lib/streaks.ts', 'fixed', false],
       ['app/Late.tsx', 'abandoned', true],
     ]);
     expect(report.blockOutcomes).toMatchObject({
       bypassed: 1,
-      'shell-write': 1,
+      'shell-write-unflagged': 1,
       'flagged-again': 1,
       fixed: 1,
       abandoned: 1,
@@ -181,7 +190,10 @@ describe('analyzeTranscript', () => {
 
   it('counts shell writes to source, compactions and tokens', () => {
     expect(report.shellWritesToSource).toHaveLength(1);
-    expect(report.shellWritesToSource[0]?.targets).toEqual(['app/Stats.tsx']);
+    expect(report.shellWritesToSource[0]).toMatchObject({
+      targets: ['app/Stats.tsx'],
+      flagged: false,
+    });
     expect(report.compactions).toBe(1);
     expect(report.toolCalls).toBe(11);
     expect(report.tokens).toEqual({
@@ -239,7 +251,7 @@ describe('subagents', () => {
     expect(report.hookEvents[0]).toMatchObject({
       agent,
       file: 'app/stats/page.tsx',
-      outcome: 'shell-write',
+      outcome: 'shell-write-unflagged',
     });
     expect(report.shellWritesToSource[0]?.agent).toBe(agent);
     expect(report.agents).toEqual(['main', agent]);
@@ -257,6 +269,124 @@ describe('subagents', () => {
     expect(agentOf('abc/subagents/agent-x.jsonl')).toBe(
       'abc/subagents/agent-x',
     );
+  });
+});
+
+describe('the hook on main', () => {
+  const postBash = (count: number, lines: string[]): string =>
+    [
+      'PostToolUse:Bash hook blocking error from command: "npx legion-steer hook":',
+      `${HOOK_PREFIX}${violationsCommandWrote(count)}`,
+      ...lines,
+      'The write already landed. Fix these before moving on.',
+    ].join('\n');
+
+  const bypassBlock = (file: string): string =>
+    [
+      `${HOOK_PREFIX}${BYPASS_PENDING}`,
+      `  ${file}:1  line 1: eslint-disable (every rule) hides rules from the linter for the whole file`,
+      'Fix the code rather than bypassing the rule, then write the file again.',
+    ].join('\n');
+
+  const entries = (): TranscriptEntry[] => [
+    call('c1', 'Bash', { command: 'node scripts/generate.js' }),
+    result(
+      'c1',
+      postBash(3, [
+        '  app/gen/Card.tsx:3  a ternary',
+        '  app/gen/Card.tsx:9  a narrative comment',
+        '  lib/gen.ts:1  the function keyword',
+      ]),
+      true,
+    ),
+    write('c2', 'app/gen/Card.tsx'),
+    result('c2', 'File written'),
+    call('c3', 'Bash', { command: "sed -i '' 's/x/y/' lib/gen.ts" }),
+    result('c3', ''),
+    write('c4', 'app/Hidden.tsx', '/* eslint-disable */\nexport const a = 1;'),
+    result('c4', bypassBlock('app/Hidden.tsx'), true),
+    call('c5', 'Edit', {
+      file_path: `${ROOT}/app/Hidden.tsx`,
+      old_string: '/* eslint-disable */',
+      new_string: '',
+    }),
+    result('c5', 'The file has been updated'),
+    {
+      type: 'system',
+      uuid: 'h-bypass-written',
+      timestamp: at(),
+      toolUseID: 'c6',
+      content: `${HOOK_PREFIX}${BYPASS_WRITTEN}\n  lib/x.ts:1  line 1: eslint-disable`,
+    },
+    call('c7', 'Bash', { command: 'cat > lib/clean.ts <<EOF\nx\nEOF' }),
+    result('c7', ''),
+  ];
+  const report = analyzeTranscript(mergeEntries([entries()]), [ROOT]);
+
+  it('records a Bash post-hook report with the files from its findings', () => {
+    const bash = report.hookEvents.find((event) => event.tool === 'Bash');
+    expect(bash).toMatchObject({
+      kind: 'report',
+      cause: 'lint',
+      violations: 3,
+      file: 'app/gen/Card.tsx',
+      files: ['app/gen/Card.tsx', 'lib/gen.ts'],
+      outcome: 'fixed',
+    });
+    expect(report.reportOutcomes.fixed).toBeGreaterThanOrEqual(1);
+  });
+
+  it('records a bypass block and calls an Edit retry that passes fixed', () => {
+    const bypass = report.hookEvents.find(
+      (event) => event.file === 'app/Hidden.tsx',
+    );
+    expect(bypass).toMatchObject({
+      kind: 'block',
+      cause: 'bypass',
+      tool: 'Write',
+      violations: 1,
+      outcome: 'fixed',
+    });
+  });
+
+  it('records a written-bypass report attached by tool id', () => {
+    expect(
+      report.hookEvents.filter(
+        (event) => event.kind === 'report' && event.cause === 'bypass',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('marks which shell writes the hook flagged', () => {
+    expect(
+      report.shellWritesToSource.map((write) => [write.targets, write.flagged]),
+    ).toEqual([
+      [['lib/gen.ts'], false],
+      [['lib/clean.ts'], false],
+    ]);
+  });
+
+  it('matches every reason the hook can give', () => {
+    expect(hookMatch(`${HOOK_PREFIX}${violationsPending(2)}`)).toEqual({
+      kind: 'block',
+      cause: 'lint',
+      scope: 'file',
+      count: 2,
+    });
+    expect(hookMatch(`${HOOK_PREFIX}${violationsWritten(1)}`)?.kind).toBe(
+      'report',
+    );
+    expect(hookMatch(`${HOOK_PREFIX}${violationsCommandWrote(4)}`)).toEqual({
+      kind: 'report',
+      cause: 'lint',
+      scope: 'command',
+      count: 4,
+    });
+    expect(hookMatch(`${HOOK_PREFIX}${BYPASS_PENDING}`)?.cause).toBe('bypass');
+    expect(hookMatch(`${HOOK_PREFIX}${BYPASS_WRITTEN}`)?.kind).toBe('report');
+    expect(
+      hookMatch(`${HOOK_PREFIX}app/a.ts gains a lint bypass at line 3`),
+    ).toBeNull();
   });
 });
 

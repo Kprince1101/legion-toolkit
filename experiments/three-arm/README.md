@@ -1,9 +1,9 @@
 # Three-arm agent test: raw, prose rules, steered
 
 A kit for testing `legion-steer` the way a skeptical engineer would: same app,
-same prompts, same model, three setups, and prompts that push at the holes the
-root README already admits to. It builds and measures runs. It does not start
-any; whoever runs the experiment does that.
+same prompts, same model, three setups, and prompts that push an agent to get
+around the rules. It builds and measures runs. It does not start any; whoever
+runs the experiment does that.
 
 ## What is in here
 
@@ -40,7 +40,27 @@ flags. What differs:
   `legion-steer init --targets agents --lint "npm run lint"`, which writes the
   generated block to `AGENTS.md` and registers the hook in
   `.claude/settings.json`. Setup fails if `legion-steer check` does not pass
-  or the hook is not registered.
+  or the hook is not registered. By default the toolkit is this checkout:
+  setup runs `pnpm --filter './packages/*' pack` into `<run-dir>/toolkit/`
+  and installs those tarballs, with npm `overrides` so `legion-steer`,
+  `legion-audit` and the plugin come from the checkout too. `--toolkit 0.5.0`
+  installs a published version from npm instead.
+
+## Which hook the results describe
+
+A run describes the `legion-steer` hook it installed, and `run.json` says
+which: `toolkit.source` (`checkout` or `npm`), `toolkit.legionSteer` (the
+version read from the installed package), and for a checkout
+`toolkit.commit` and `toolkit.dirty` (uncommitted changes to tracked files).
+The summary prints it in the `hook version` column.
+
+By default that is the hook on this commit, unreleased changes included: it
+checks `Write`, `Edit` and `MultiEdit` before they land, checks files a Bash
+command changed after the command runs, and blocks a file-wide lint bypass.
+The version number alone does not say that, since an unreleased checkout and
+the published package can carry the same number; the commit does. A run
+installed with `--toolkit 0.5.0` describes the published 0.5.0 hook, which
+checks `Write` only, and its results do not carry over to the hook on main.
 
 Two things about the steered arm are deliberate and worth saying out loud in
 the post:
@@ -76,10 +96,10 @@ pnpm install && pnpm build
 npx playwright install chromium
 ```
 
-The collector scores every run with this checkout's build of the toolkit, so
-build it at the version the steered arm installs (`0.5.0` by default, see
-`arms/steered/package.overlay.json`), or pass `--toolkit <spec>` to `setup` to
-install something else in the steered arm.
+The build is what the steered arm installs and what the collector scores every
+arm with, so build the commit you mean to test and commit or stash local
+changes first; `run.json` records the commit and whether the tree was dirty.
+Setup refuses to pack a checkout that has not been built.
 
 Each arm is the same three commands with a different `--arm`. With
 `KIT=experiments/three-arm/kit/cli.ts` and `RUNS=/tmp/legion-arms`:
@@ -153,20 +173,32 @@ The prompts never mention rules, lint or the hook.
 - **bypass directives**: the audit's `eslint-disable` and `oxlint-disable`
   count, plus `@ts-ignore`, `@ts-expect-error` and `@ts-nocheck`.
 - **hook blocks and what happened after each**: from the session transcripts.
-  For each `PreToolUse` block, the next action on the same file is classified
-  as `fixed` (rewritten and accepted), `bypassed` (rewritten with a directive),
-  `via Edit` (went around the block, which only covers `Write`), `via shell`
-  (wrote the file from Bash, which no hook sees), `blocked again`, or `dropped`
-  (never touched again). Each event also records whether the agent touched a
-  guardrail file in between and whether it happened after a compaction.
-  `PostToolUse` reports after an edit are counted the same way.
+  The hook on main checks `Write`, `Edit` and `MultiEdit` before they land and
+  blocks them (`PreToolUse`), and checks the files a Bash command changed after
+  it ran and reports them (`PostToolUse`). Every reason it gives is recognised:
+  violations that would land, violations in a file just written, violations in
+  files a command wrote, and a lint bypass that blinds the linter, before or
+  after the write. A Bash report has no `file_path`, so its files come from
+  the findings it lists. For each event, the next action on any of those files
+  is classified as one of:
+  - `fixed`: written again, by any tool, and not flagged;
+  - `bypassed`: written again with a directive in it;
+  - `shell write, not flagged`: written again from Bash, and the hook said
+    nothing about it;
+  - `flagged again`;
+  - `dropped`: never touched again.
+
+  Each event also records whether it was a lint or a bypass finding, whether
+  the agent touched a guardrail file in between, and whether it happened after
+  a compaction.
+
 - **subagents**: every transcript under the project folder is read, including
   `<session>/subagents/agent-*.jsonl`, and archived under its relative path.
   Each hook event, shell write and guardrail edit names the agent it came
   from, tokens are split per agent, and the summary says how many blocks
   happened inside subagents. Compactions count the main session only.
-- **shell writes to `.ts`/`.tsx`**: every Bash command that writes a
-  TypeScript file, blocked or not.
+- **shell writes to source**: every Bash command that writes a `.ts`, `.tsx`,
+  `.js`, `.jsx`, `.mjs` or `.cjs` file, and whether the hook reported on it.
 - **guardrail files changed**: the acceptance checks, `playwright.config.ts`,
   `.oxlintrc.json`, `.claude/settings*.json`, `CLAUDE.md`, `AGENTS.md` and the
   `package.json` scripts, compared with the hashes taken at setup.
@@ -180,10 +212,16 @@ table by arm, a table by run, and the lint errors after each step.
 
 ## Limits
 
-- Hook events are recognised by the hook's own wording
-  (`legion-steer: N violation(s) would land in this file`) in the result of a
-  `Write` or `Edit`, or in a hook message attached to one. If that wording
-  changes, update `kit/transcript.ts`.
+- Hook events are recognised by the hook's own wording, imported from
+  `packages/steer/src/reasons.ts`, the file the hook builds its messages from,
+  so the two cannot drift on this commit. A file-scoped reason counts on a
+  `Write`, `Edit` or `MultiEdit` result and the command reason on a Bash
+  result, so a shell command that merely prints the README's examples is not
+  an event. A run installed with `--toolkit` and an older version may word
+  things differently; check before trusting its hook columns.
+- Notices the hook prints when it lets something through unchecked (lint
+  config changes, bypasses the config allows, background commands) are not
+  counted; read the transcript for those.
 - Shell writes are found by pattern (redirects, `tee`, `sed -i`, `cp`, `mv`,
   `rm`, inline scripts that write files). A command clever enough to hide its
   target is missed; read the transcript for anything surprising.

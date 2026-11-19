@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseKitArgs } from './args.ts';
 import {
@@ -6,7 +7,13 @@ import {
   projectSlug,
   userConfigWarnings,
 } from './isolation.ts';
-import { mergeManifest, STEER_INIT } from './setup.ts';
+import {
+  checkoutPlan,
+  mergeManifest,
+  npmPlan,
+  packArgs,
+  STEER_INIT,
+} from './setup.ts';
 import { claudeArgs, isResultFile, listSteps, stepsFrom } from './steps.ts';
 
 describe('parseKitArgs', () => {
@@ -79,18 +86,24 @@ describe('isolation', () => {
 });
 
 describe('setup', () => {
-  it('adds the steered tooling without touching the rest', () => {
+  const overlay = {
+    scripts: { lint: 'legion-audit directives && oxlint .' },
+    devDependencies: { oxlint: '1.89.0' },
+  };
+
+  it('installs this checkout by default, every package from its tarball', () => {
+    const plan = checkoutPlan({
+      'legion-toolkit': '/runs/steered-1/toolkit/legion-toolkit.tgz',
+      'legion-steer': '/runs/steered-1/toolkit/legion-steer.tgz',
+    });
     const merged = mergeManifest(
       {
         name: 'habit-tracker',
         scripts: { build: 'next build' },
         devDependencies: { typescript: '6.0.3' },
       },
-      {
-        scripts: { lint: 'legion-audit directives && oxlint .' },
-        devDependencies: { 'legion-toolkit': '0.5.0', oxlint: '1.89.0' },
-      },
-      null,
+      overlay,
+      plan,
     );
     expect(merged).toEqual({
       name: 'habit-tracker',
@@ -100,21 +113,54 @@ describe('setup', () => {
       },
       devDependencies: {
         typescript: '6.0.3',
-        'legion-toolkit': '0.5.0',
         oxlint: '1.89.0',
+        'legion-toolkit': 'file:/runs/steered-1/toolkit/legion-toolkit.tgz',
+      },
+      overrides: {
+        'legion-toolkit': 'file:/runs/steered-1/toolkit/legion-toolkit.tgz',
+        'legion-steer': 'file:/runs/steered-1/toolkit/legion-steer.tgz',
       },
     });
+    expect(plan.source).toBe('checkout');
   });
 
-  it('lets a run pin a different toolkit build', () => {
-    const merged = mergeManifest(
-      {},
-      { devDependencies: { 'legion-toolkit': '0.5.0' } },
-      'file:/tmp/legion-toolkit-0.6.0.tgz',
+  it('installs a published version when --toolkit names one', () => {
+    const merged = mergeManifest({}, overlay, npmPlan('0.5.0'));
+    expect(merged.devDependencies?.['legion-toolkit']).toBe('0.5.0');
+    expect(merged.overrides).toBeUndefined();
+  });
+
+  it('refuses a pack without the toolkit tarball', () => {
+    expect(() => checkoutPlan({ 'legion-steer': '/x.tgz' })).toThrow(
+      'no legion-toolkit tarball',
     );
-    expect(merged.devDependencies?.['legion-toolkit']).toBe(
-      'file:/tmp/legion-toolkit-0.6.0.tgz',
-    );
+  });
+
+  it('packs every workspace package', () => {
+    expect(packArgs('/runs/s/toolkit')).toEqual([
+      '--filter',
+      './packages/*',
+      'pack',
+      '--out',
+      '/runs/s/toolkit/%s.tgz',
+    ]);
+  });
+
+  it('pins nothing from npm in the steered overlay', () => {
+    const steered = JSON.parse(
+      readFileSync(
+        join(
+          process.cwd(),
+          'experiments',
+          'three-arm',
+          'arms',
+          'steered',
+          'package.overlay.json',
+        ),
+        'utf8',
+      ),
+    ) as { devDependencies: Record<string, string> };
+    expect(steered.devDependencies['legion-toolkit']).toBeUndefined();
   });
 
   it('steers AGENTS.md and names the lint command', () => {

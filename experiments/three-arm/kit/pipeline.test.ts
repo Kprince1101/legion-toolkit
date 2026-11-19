@@ -25,14 +25,16 @@ let prose: RunMeta;
 
 const quiet = (): void => undefined;
 
-const setup = (arm: RunMeta['arm'], name: string): RunMeta =>
+const setup = (arm: RunMeta['arm'], name: string, install = false): RunMeta =>
   setupRun({
     arm,
     runDir: join(runs, name),
     kitDir: KIT,
+    repoDir: runs,
     toolkit: null,
-    install: false,
+    install,
     kitCommit: 'abc123',
+    kitDirty: false,
     log: quiet,
   });
 
@@ -95,6 +97,12 @@ describe('setupRun', () => {
   it('refuses a steered arm it cannot install', () => {
     expect(() => setup('steered', 'steered-1')).toThrow(
       'the steered arm needs the install',
+    );
+  });
+
+  it('refuses to pack a checkout that was never built', () => {
+    expect(() => setup('steered', 'steered-2', true)).toThrow(
+      'the checkout is not built',
     );
   });
 });
@@ -290,6 +298,7 @@ describe('collectRun', () => {
         agent: 'sess-2/subagents/agent-x',
         command: 'cp /tmp/y.tsx app/y.tsx',
         targets: ['app/y.tsx'],
+        flagged: false,
         afterCompaction: false,
       },
     ]);

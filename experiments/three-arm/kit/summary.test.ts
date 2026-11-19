@@ -4,6 +4,7 @@ import { NOT_RUN } from './reports.ts';
 import {
   armRow,
   formatCount,
+  hookVersionText,
   markdownTable,
   median,
   outcomeText,
@@ -16,9 +17,11 @@ import type { HookEvent } from './transcript.ts';
 const block = (outcome: HookEvent['outcome'], agent = 'main'): HookEvent => ({
   agent,
   kind: 'block',
+  cause: 'lint',
   toolUseId: 't',
   tool: 'Write',
   file: 'app/x.tsx',
+  files: ['app/x.tsx'],
   violations: 1,
   findings: [],
   outcome,
@@ -33,6 +36,13 @@ const record = (arm: Arm, runId: string, lintErrors: number): RunRecord => ({
   arm,
   runId,
   collectedAt: '2026-11-18T00:00:00.000Z',
+  hook: {
+    source: 'checkout',
+    spec: 'file:/runs/toolkit/legion-toolkit.tgz',
+    legionSteer: '0.5.0',
+    commit: '3606c47aaaaaaa',
+    dirty: false,
+  },
   acceptance: { ...NOT_RUN, ran: true, passed: 22, failed: 2, total: 24 },
   audit: {
     score: 80,
@@ -65,14 +75,30 @@ const record = (arm: Arm, runId: string, lintErrors: number): RunRecord => ({
       cacheRead: 2_000_000,
     },
     tokensByAgent: {},
-    hookEvents: [block('fixed'), block('fixed'), block('shell-write')],
-    blockOutcomes: { ...emptyOutcomes(), fixed: 2, 'shell-write': 1 },
-    reportOutcomes: emptyOutcomes(),
+    hookEvents: [
+      block('fixed'),
+      block('fixed'),
+      block('shell-write-unflagged'),
+    ],
+    blockOutcomes: {
+      ...emptyOutcomes(),
+      fixed: 2,
+      'shell-write-unflagged': 1,
+    },
+    reportOutcomes: { ...emptyOutcomes(), 'flagged-again': 1 },
     shellWritesToSource: [
       {
         agent: 'main',
         command: 'cat > app/x.tsx',
         targets: ['app/x.tsx'],
+        flagged: true,
+        afterCompaction: false,
+      },
+      {
+        agent: 'main',
+        command: 'sed -i s/a/b/ app/y.tsx',
+        targets: ['app/y.tsx'],
+        flagged: false,
         afterCompaction: false,
       },
     ],
@@ -141,15 +167,40 @@ describe('summary', () => {
       '2',
       '1',
       '3',
-      '2 fixed, 1 via shell',
+      '2 fixed, 1 shell write, not flagged',
       '0',
-      '1',
+      '2 (1)',
       '1: .oxlintrc.json',
       'app/stats/StatsDashboard.tsx (512)',
       '2.0M / 13k',
       '$3.50',
       '2',
+      '1 flagged again',
+      'legion-steer 0.5.0 @ 3606c47',
     ]);
+  });
+
+  it('names the hook a published install came from', () => {
+    const base = record('steered', 'steered-3', 0);
+    expect(
+      hookVersionText({
+        ...base,
+        hook: {
+          source: 'npm',
+          spec: '0.5.0',
+          legionSteer: '0.5.0',
+          commit: null,
+          dirty: null,
+        },
+      }),
+    ).toBe('legion-steer 0.5.0 from npm (0.5.0)');
+    expect(
+      hookVersionText({
+        ...base,
+        hook: { ...(base.hook as NonNullable<RunRecord['hook']>), dirty: true },
+      }),
+    ).toBe('legion-steer 0.5.0 @ 3606c47 + local changes');
+    expect(hookVersionText({ ...base, hook: null })).toBe('–');
   });
 
   it('aggregates an arm', () => {
@@ -158,7 +209,7 @@ describe('summary', () => {
       record('raw', 'raw-2', 20),
     ]);
     expect(row.slice(0, 4)).toEqual(['raw', '2', '92%', '15']);
-    expect(row[9]).toBe('4 fixed, 2 via shell');
+    expect(row[9]).toBe('4 fixed, 2 shell write, not flagged');
     expect(row[13]).toBe('$3.50');
   });
 

@@ -92,7 +92,9 @@ export const HELP = `node experiments/three-arm/kit/cli.ts <command> [options]
 Commands
   setup       build one run's workspace for an arm
               --arm <raw|prose|steered> --run-dir <dir>
-              [--toolkit <npm spec>] [--no-install]
+              [--toolkit <published version>] [--no-install]
+              the steered arm installs a pnpm pack of this checkout
+              unless --toolkit names a published legion-toolkit
   run         send every prompt in prompts/ to Claude Code, one session
               --run-dir <dir> --model <id>
               [--from <step>] [--permission-mode <mode>]

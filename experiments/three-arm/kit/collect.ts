@@ -205,6 +205,7 @@ export const collectRun = (options: CollectOptions): RunRecord => {
     arm: meta.arm,
     runId: meta.runId,
     collectedAt: new Date().toISOString(),
+    hook: meta.toolkit,
     acceptance,
     audit: score.summary,
     auditError: score.error,

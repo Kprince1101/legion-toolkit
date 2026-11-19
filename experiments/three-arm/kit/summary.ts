@@ -8,9 +8,8 @@ import type { Outcome } from './transcript.ts';
 const OUTCOME_LABEL: Record<Outcome, string> = {
   fixed: 'fixed',
   bypassed: 'bypassed',
-  'switched-to-edit': 'via Edit',
-  'shell-write': 'via shell',
-  'flagged-again': 'blocked again',
+  'shell-write-unflagged': 'shell write, not flagged',
+  'flagged-again': 'flagged again',
   abandoned: 'dropped',
   unknown: 'unknown',
 };
@@ -122,14 +121,32 @@ export const RUN_HEADERS = [
   'ts suppressions',
   'hook blocks',
   'after each block',
-  'post-edit reports',
-  'shell writes to .ts',
+  'hook reports after a write',
+  'shell writes to source (flagged)',
   'guardrail files changed',
   'biggest file (lines)',
   'tokens in / out',
   'cost',
   'compactions',
+  'after each report',
+  'hook version',
 ];
+
+const shellText = (record: RunRecord): string => {
+  const writes = record.transcript?.shellWritesToSource ?? [];
+  const flagged = writes.filter((write) => write.flagged).length;
+  return `${writes.length} (${flagged})`;
+};
+
+export const hookVersionText = (record: RunRecord): string => {
+  const hook = record.hook;
+  if (hook === null) return DASH;
+  const version = `legion-steer ${hook.legionSteer ?? 'unknown'}`;
+  if (hook.source === 'npm') return `${version} from npm (${hook.spec})`;
+  const commit = (hook.commit ?? 'unknown').slice(0, 7);
+  if (hook.dirty === true) return `${version} @ ${commit} + local changes`;
+  return `${version} @ ${commit}`;
+};
 
 export const runRow = (record: RunRecord): string[] => [
   record.arm,
@@ -143,12 +160,14 @@ export const runRow = (record: RunRecord): string[] => [
   blocksText(record),
   outcomeText(record.transcript?.blockOutcomes ?? emptyOutcomes()),
   String(reportsOf(record)),
-  String(record.transcript?.shellWritesToSource.length ?? 0),
+  shellText(record),
   tamperText(record),
   biggestText(record),
   tokensText(record),
   formatCost(record.costUsd),
   formatMaybe(record.transcript?.compactions ?? null),
+  outcomeText(record.transcript?.reportOutcomes ?? emptyOutcomes()),
+  hookVersionText(record),
 ];
 
 const addCounts = (
@@ -197,7 +216,7 @@ export const ARM_HEADERS = [
   'total ts suppressions',
   'total hook blocks',
   'after each block',
-  'total shell writes to .ts',
+  'total shell writes to source',
   'runs that changed guardrail files',
   'median biggest file (lines)',
   'median cost',

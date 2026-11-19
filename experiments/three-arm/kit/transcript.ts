@@ -1,27 +1,95 @@
 import { isAbsolute, normalize } from 'node:path';
+import {
+  BYPASS_PENDING,
+  BYPASS_WRITTEN,
+  HOOK_PREFIX,
+  violationsCommandWrote,
+  violationsPending,
+  violationsWritten,
+} from '../../../packages/steer/src/reasons.ts';
 import { shellWriteTargets } from './shell.ts';
 import { toPosix } from './tree.ts';
 
-const HOOK_MARK = 'legion-steer:';
-const BLOCK_MARK = 'would land in this file';
-const REPORT_MARK = 'in the file just written';
-const VIOLATIONS = /(\d+) violation\(s\)/;
 const FINDING_LINE = /^\s+(\S+):(\d+)\s{2,}(.+)$/;
 const BYPASS = /(?:eslint|oxlint)-disable|@ts-(?:ignore|expect-error|nocheck)/;
-const TS_FILE = /\.(?:ts|tsx|mts|cts)$/;
+const SOURCE_FILE = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
 const GUARDRAIL_FILE =
   /(?:^|\/)(?:\.oxlintrc\.json|\.claude\/settings(?:\.local)?\.json|CLAUDE(?:\.local)?\.md|AGENTS\.md|playwright\.config\.ts)$|(?:^|\/)acceptance\//;
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'MultiEdit']);
-const EDIT_TOOLS = new Set(['Edit', 'MultiEdit']);
 const COMMAND_PREVIEW = 200;
+const COUNT_PLACEHOLDER = 987654321;
 
 export type HookKind = 'block' | 'report';
+
+export type HookCause = 'lint' | 'bypass';
+
+type HookScope = 'file' | 'command';
+
+interface HookSignal {
+  kind: HookKind;
+  cause: HookCause;
+  scope: HookScope;
+  pattern: RegExp;
+}
+
+export interface HookMatch {
+  kind: HookKind;
+  cause: HookCause;
+  scope: HookScope;
+  count: number | null;
+}
+
+const escapeRegex = (text: string): string =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const counted = (reason: (count: number) => string): RegExp =>
+  new RegExp(
+    escapeRegex(`${HOOK_PREFIX}${reason(COUNT_PLACEHOLDER)}`).replace(
+      String(COUNT_PLACEHOLDER),
+      '(\\d+)',
+    ),
+  );
+
+const literal = (reason: string): RegExp =>
+  new RegExp(escapeRegex(`${HOOK_PREFIX}${reason}`));
+
+const SIGNALS: HookSignal[] = [
+  {
+    kind: 'block',
+    cause: 'lint',
+    scope: 'file',
+    pattern: counted(violationsPending),
+  },
+  {
+    kind: 'block',
+    cause: 'bypass',
+    scope: 'file',
+    pattern: literal(BYPASS_PENDING),
+  },
+  {
+    kind: 'report',
+    cause: 'lint',
+    scope: 'file',
+    pattern: counted(violationsWritten),
+  },
+  {
+    kind: 'report',
+    cause: 'bypass',
+    scope: 'file',
+    pattern: literal(BYPASS_WRITTEN),
+  },
+  {
+    kind: 'report',
+    cause: 'lint',
+    scope: 'command',
+    pattern: counted(violationsCommandWrote),
+  },
+];
 
 export type Outcome =
   | 'fixed'
   | 'bypassed'
-  | 'switched-to-edit'
-  | 'shell-write'
+  | 'shell-write-unflagged'
   | 'flagged-again'
   | 'abandoned'
   | 'unknown';
@@ -29,8 +97,7 @@ export type Outcome =
 export const OUTCOMES: Outcome[] = [
   'fixed',
   'bypassed',
-  'switched-to-edit',
-  'shell-write',
+  'shell-write-unflagged',
   'flagged-again',
   'abandoned',
   'unknown',
@@ -89,9 +156,11 @@ export interface HookFinding {
 export interface HookEvent {
   agent: string;
   kind: HookKind;
+  cause: HookCause;
   toolUseId: string | null;
   tool: string | null;
   file: string | null;
+  files: string[];
   violations: number;
   findings: HookFinding[];
   outcome: Outcome;
@@ -112,6 +181,7 @@ export interface ShellWrite {
   agent: string;
   command: string;
   targets: string[];
+  flagged: boolean;
   afterCompaction: boolean;
 }
 
@@ -148,7 +218,7 @@ interface ToolCall {
 
 interface RawHook {
   agent: string;
-  kind: HookKind;
+  match: HookMatch;
   toolUseId: string | null;
   text: string;
   position: number;
@@ -232,10 +302,28 @@ const blocksOf = (entry: TranscriptEntry): ContentBlock[] => {
   );
 };
 
-export const hookKind = (text: string): HookKind | null => {
-  if (!text.includes(HOOK_MARK)) return null;
-  if (text.includes(BLOCK_MARK)) return 'block';
-  if (text.includes(REPORT_MARK)) return 'report';
+export const hookMatch = (text: string): HookMatch | null => {
+  for (const signal of SIGNALS) {
+    const found = signal.pattern.exec(text);
+    if (found === null) continue;
+    let count: number | null = null;
+    if (found[1] !== undefined) count = Number(found[1]);
+    return {
+      kind: signal.kind,
+      cause: signal.cause,
+      scope: signal.scope,
+      count,
+    };
+  }
+  return null;
+};
+
+export const hookKind = (text: string): HookKind | null =>
+  hookMatch(text)?.kind ?? null;
+
+const scopeOf = (tool: string): HookScope | null => {
+  if (WRITE_TOOLS.has(tool)) return 'file';
+  if (tool === 'Bash') return 'command';
   return null;
 };
 
@@ -252,11 +340,8 @@ export const parseFindings = (text: string): HookFinding[] =>
     ];
   });
 
-const violationsIn = (text: string, findings: HookFinding[]): number => {
-  const match = VIOLATIONS.exec(text);
-  if (match === null) return findings.length;
-  return Number(match[1] ?? '0');
-};
+const violationsIn = (match: HookMatch, findings: HookFinding[]): number =>
+  match.count ?? findings.length;
 
 const isCompaction = (entry: TranscriptEntry): boolean =>
   (entry.type === 'system' && entry.subtype === 'compact_boundary') ||
@@ -274,9 +359,12 @@ export const pathKey = (roots: string[], filePath: string): string => {
 
 const contentOf = (call: ToolCall): string => {
   const edits = (call.input.edits ?? []).map((edit) => edit.new_string ?? '');
-  return [call.input.content ?? '', call.input.new_string ?? '', ...edits].join(
-    '\n',
-  );
+  return [
+    call.input.content ?? '',
+    call.input.new_string ?? '',
+    call.input.command ?? '',
+    ...edits,
+  ].join('\n');
 };
 
 const targetsOf = (call: ToolCall, roots: string[]): string[] => {
@@ -296,8 +384,7 @@ const targetsOf = (call: ToolCall, roots: string[]): string[] => {
 export const emptyOutcomes = (): Record<Outcome, number> => ({
   fixed: 0,
   bypassed: 0,
-  'switched-to-edit': 0,
-  'shell-write': 0,
+  'shell-write-unflagged': 0,
   'flagged-again': 0,
   abandoned: 0,
   unknown: 0,
@@ -343,11 +430,15 @@ const recordOther = (scan: Scan, entry: TranscriptEntry, at: number) => {
   for (const result of results) {
     const call = scan.calls.find((known) => known.id === result.tool_use_id);
     const text = stringsIn(result.content).join('\n');
-    const kind = hookKind(text);
-    if (kind !== null && call !== undefined && WRITE_TOOLS.has(call.name)) {
+    const match = hookMatch(text);
+    if (
+      match !== null &&
+      call !== undefined &&
+      scopeOf(call.name) === match.scope
+    ) {
       scan.hooks.push({
         agent: call.agent,
-        kind,
+        match,
         toolUseId: call.id,
         text,
         position: at,
@@ -360,11 +451,11 @@ const recordOther = (scan: Scan, entry: TranscriptEntry, at: number) => {
   if (results.length > 0 || isCompaction(entry)) return;
   if (entry.type === 'summary') return;
   const text = stringsIn(entry).join('\n');
-  const kind = hookKind(text);
-  if (kind === null) return;
+  const match = hookMatch(text);
+  if (match === null) return;
   const lastOwnCall = scan.calls.findLast((known) => known.agent === agent);
   const toolUseId = entry.toolUseID ?? lastOwnCall?.id ?? null;
-  scan.hooks.push({ agent, kind, toolUseId, text, position: at, timestamp });
+  scan.hooks.push({ agent, match, toolUseId, text, position: at, timestamp });
 };
 
 const isMainCompaction = (entry: TranscriptEntry): boolean =>
@@ -394,7 +485,7 @@ const uniqueHooks = (hooks: RawHook[]): RawHook[] => {
   const seen = new Set<string>();
   return hooks.filter((hook) => {
     if (hook.toolUseId === null) return true;
-    const key = `${hook.kind}:${hook.toolUseId}`;
+    const key = `${hook.match.kind}:${hook.toolUseId}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -418,27 +509,36 @@ interface Judged {
 }
 
 const judge = (
-  hook: RawHook,
   callIndex: number,
-  key: string,
+  keys: string[],
   context: { calls: ToolCall[]; hooked: Set<string>; roots: string[] },
 ): Judged => {
   const { calls, hooked, roots } = context;
   const nextIndex = calls.findIndex(
     (call, index) =>
       index > callIndex &&
-      targetsOf(call, roots).includes(key) &&
+      targetsOf(call, roots).some((target) => keys.includes(target)) &&
       (!call.failed || hooked.has(call.id)),
   );
   if (nextIndex === -1) return { outcome: 'abandoned', nextIndex: null };
   const next = calls[nextIndex] as ToolCall;
-  if (next.name === 'Bash') return { outcome: 'shell-write', nextIndex };
   if (hooked.has(next.id)) return { outcome: 'flagged-again', nextIndex };
   if (BYPASS.test(contentOf(next))) return { outcome: 'bypassed', nextIndex };
-  if (hook.kind === 'block' && EDIT_TOOLS.has(next.name)) {
-    return { outcome: 'switched-to-edit', nextIndex };
+  if (next.name === 'Bash') {
+    return { outcome: 'shell-write-unflagged', nextIndex };
   }
   return { outcome: 'fixed', nextIndex };
+};
+
+const filesOf = (
+  call: ToolCall,
+  findings: HookFinding[],
+  roots: string[],
+): string[] => {
+  if (call.input.file_path !== undefined) {
+    return [pathKey(roots, call.input.file_path)];
+  }
+  return [...new Set(findings.map((finding) => pathKey(roots, finding.file)))];
 };
 
 const touchesGuardrail = (call: ToolCall, roots: string[]): boolean =>
@@ -459,25 +559,38 @@ const hookEvent = (
   const call = scan.calls[callIndex];
   const base = {
     agent: hook.agent,
-    kind: hook.kind,
+    kind: hook.match.kind,
+    cause: hook.match.cause,
     toolUseId: hook.toolUseId,
-    violations: violationsIn(hook.text, findings),
+    violations: violationsIn(hook.match, findings),
     findings,
     afterCompaction,
     timestamp: hook.timestamp,
   };
-  if (call === undefined || call.input.file_path === undefined) {
+  if (call === undefined) {
     return {
       ...base,
-      tool: call?.name ?? null,
+      tool: null,
       file: null,
+      files: [],
       outcome: 'unknown',
       callsUntilNext: null,
       touchedGuardrails: false,
     };
   }
-  const key = pathKey(roots, call.input.file_path);
-  const judged = judge(hook, callIndex, key, {
+  const files = filesOf(call, findings, roots);
+  if (files.length === 0) {
+    return {
+      ...base,
+      tool: call.name,
+      file: null,
+      files,
+      outcome: 'unknown',
+      callsUntilNext: null,
+      touchedGuardrails: false,
+    };
+  }
+  const judged = judge(callIndex, files, {
     calls: scan.calls,
     hooked,
     roots,
@@ -489,7 +602,8 @@ const hookEvent = (
   return {
     ...base,
     tool: call.name,
-    file: key,
+    file: files[0] ?? null,
+    files,
     outcome: judged.outcome,
     callsUntilNext,
     touchedGuardrails: between.some((other) => touchesGuardrail(other, roots)),
@@ -540,12 +654,16 @@ const tokensByAgent = (scan: Scan): Record<string, TokenTotals> => {
 const isAfter = (positions: number[], at: number): boolean =>
   positions.some((position) => position < at);
 
-const shellWrites = (scan: Scan, roots: string[]): ShellWrite[] =>
+const shellWrites = (
+  scan: Scan,
+  hooked: Set<string>,
+  roots: string[],
+): ShellWrite[] =>
   scan.calls
     .filter((call) => call.name === 'Bash' && !call.failed)
     .flatMap((call) => {
       const targets = targetsOf(call, roots).filter((target) =>
-        TS_FILE.test(target),
+        SOURCE_FILE.test(target),
       );
       if (targets.length === 0) return [];
       return [
@@ -553,6 +671,7 @@ const shellWrites = (scan: Scan, roots: string[]): ShellWrite[] =>
           agent: call.agent,
           command: (call.input.command ?? '').slice(0, COMMAND_PREVIEW),
           targets,
+          flagged: hooked.has(call.id),
           afterCompaction: isAfter(scan.compactionPositions, call.position),
         },
       ];
@@ -594,7 +713,7 @@ export const analyzeTranscript = (
     hookEvents,
     blockOutcomes: tally(hookEvents, 'block'),
     reportOutcomes: tally(hookEvents, 'report'),
-    shellWritesToSource: shellWrites(scan, roots),
+    shellWritesToSource: shellWrites(scan, hooked, roots),
     guardrailEdits: guardrailEdits(scan, roots),
   };
 };
