@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { addHabit, markDays, newAccount, signUp, utcDay } from './helpers';
+import {
+  addHabit,
+  heading,
+  markDays,
+  newAccount,
+  signUp,
+  utcDay,
+} from './helpers';
 
 test.describe('stats', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,9 +15,7 @@ test.describe('stats', () => {
 
   test('a new account has empty stats', async ({ page }) => {
     await page.goto('/stats');
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Stats' }),
-    ).toBeVisible();
+    await expect(heading(page, 'Stats')).toBeVisible();
     await expect(page.getByTestId('stat-total-habits')).toHaveText('0');
     await expect(page.getByTestId('stat-week-completions')).toHaveText('0');
     await expect(page.getByTestId('stat-month-rate')).toHaveText('0%');
@@ -40,11 +45,12 @@ test.describe('stats', () => {
     });
 
     test('the heatmap counts completions per day', async ({ page }) => {
-      const days = page.getByTestId('heatmap-day');
+      const heatmap = page.getByTestId('heatmap');
+      const days = heatmap.getByTestId('heatmap-day');
       await expect(days).toHaveCount(30);
       await expect(days.last()).toHaveAttribute('data-date', utcDay(0));
       const day = (daysAgo: number) =>
-        page.locator(
+        heatmap.locator(
           `[data-testid="heatmap-day"][data-date="${utcDay(daysAgo)}"]`,
         );
       await expect(day(0)).toHaveAttribute('data-count', '2');
@@ -54,7 +60,7 @@ test.describe('stats', () => {
     });
 
     test('the table sorts by a column both ways', async ({ page }) => {
-      const table = page.getByRole('table');
+      const table = page.getByTestId('habit-table');
       for (const header of [
         'Habit',
         'Current streak',

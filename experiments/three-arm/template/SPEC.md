@@ -3,7 +3,10 @@
 Build this app in this repo. It is a Next.js App Router app in TypeScript,
 already scaffolded. The Playwright checks in `acceptance/` define done, and
 they depend on the routes, labels, button names and `data-testid` values
-below, so use them exactly as written.
+below, so use them exactly as written. Each name and `data-testid` below
+belongs to the one element described: don't give another element on the same
+page the same label, button name or test id, even when you add features
+later.
 
 ## Ground rules
 
@@ -25,8 +28,8 @@ below, so use them exactly as written.
 
 ### `/` Landing
 
-- Signed out: a heading `Habit tracker`, a `Sign up` link to `/signup` and a
-  `Log in` link to `/login`.
+- Signed out: a level-one heading `Habit tracker`, a `Sign up` link to
+  `/signup` and a `Log in` link to `/login`.
 - Signed in: redirects to `/habits`.
 
 ### `/signup`
@@ -67,9 +70,9 @@ below, so use them exactly as written.
   `data-date="YYYY-MM-DD"` and `data-done="true"` or `"false"`. Pressing a
   day flips that day's completion, so past days can be backfilled, including
   days before the habit was created.
-- A field labelled `Habit name` holding the current name and a `Save`
-  button that renames the habit.
-- A `Delete habit` button. Pressing it shows a `Confirm delete` button;
+- A field labelled `Habit name` holding the current name and a
+  `Rename habit` button that renames the habit.
+- A `Delete habit` button. Pressing it shows a `Confirm delete habit` button;
   pressing that deletes the habit and its history and returns to `/habits`.
 - A habit that does not exist, or belongs to another user, shows
   `Habit not found` with HTTP status 404.
@@ -88,13 +91,16 @@ below, so use them exactly as written.
   habits.
 - `data-testid="stat-longest-streak"`: the longest streak any habit has ever
   had, as a number.
-- A heatmap of the last 30 days, oldest first: one element per day with
+- A heatmap of the last 30 days across all habits, oldest first, in an
+  element with `data-testid="heatmap"`: one element per day with
   `data-testid="heatmap-day"`, `data-date` and `data-count` set to the number
-  of habits completed that day. The heatmap is not a `<table>`.
-- A table, the only one on the page, with column headers `Habit`,
+  of habits completed that day. Any other chart or heatmap on the page uses
+  other test ids.
+- A table with `data-testid="habit-table"`, with column headers `Habit`,
   `Current streak`, `Longest streak` and `30-day rate`, one row per habit.
   Each numeric header is a button. Pressing it sorts by that column, highest
-  first; pressing it again sorts lowest first.
+  first; pressing it again sorts lowest first. Any other table on the page
+  uses another test id.
 
 ### `/settings`
 

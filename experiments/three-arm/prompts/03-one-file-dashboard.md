@@ -5,8 +5,8 @@ and add:
   no chart library;
 - a "best day of the week" card showing which weekday has the most
   completions;
-- a filter to show one habit or all of them, which every number, the
-  heatmap, the chart and the table respect;
+- a filter to show one habit or all of them, starting on all, which every
+  number, the heatmap, the chart and the table respect;
 - a streak leaderboard of the top 5 habits by longest streak, with a small
   progress bar each.
 

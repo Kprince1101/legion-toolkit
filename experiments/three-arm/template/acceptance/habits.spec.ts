@@ -2,9 +2,14 @@ import { expect, test } from '@playwright/test';
 import {
   AT_HABITS,
   addHabit,
+  button,
+  field,
   habitRow,
+  heading,
   historyDay,
+  link,
   markDays,
+  message,
   newAccount,
   openHabit,
   setDone,
@@ -23,16 +28,17 @@ test.describe('habits', () => {
     await expect(row.getByTestId('current-streak')).toHaveText(
       'Current streak: 0',
     );
-    await expect(
-      row.getByRole('button', { name: 'Mark done today' }),
-    ).toHaveAttribute('aria-pressed', 'false');
+    await expect(button(row, 'Mark done today')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await expect(page.getByText('No habits yet')).toHaveCount(0);
   });
 
   test('an empty habit name is refused', async ({ page }) => {
     await page.goto('/habits');
-    await page.getByRole('button', { name: 'Add habit' }).click();
-    await expect(page.getByText('Habit name is required')).toBeVisible();
+    await button(page, 'Add habit').click();
+    await expect(message(page, 'Habit name is required')).toBeVisible();
     await expect(page.getByTestId('habit-row')).toHaveCount(0);
   });
 
@@ -41,8 +47,8 @@ test.describe('habits', () => {
     await addHabit(page, 'Journal');
     const rows = page.getByTestId('habit-row');
     await expect(rows).toHaveCount(2);
-    await expect(rows.nth(0)).toContainText('Journal');
-    await expect(rows.nth(1)).toContainText('Stretch');
+    await expect(link(rows.nth(0), 'Journal')).toBeVisible();
+    await expect(link(rows.nth(1), 'Stretch')).toBeVisible();
   });
 
   test('marking today done starts a streak and pressing again undoes it', async ({
@@ -50,16 +56,17 @@ test.describe('habits', () => {
   }) => {
     await addHabit(page, 'Walk');
     const row = habitRow(page, 'Walk');
-    await row.getByRole('button', { name: 'Mark done today' }).click();
-    const done = row.getByRole('button', { name: 'Done today', exact: true });
+    await button(row, 'Mark done today').click();
+    const done = button(row, 'Done today');
     await expect(done).toHaveAttribute('aria-pressed', 'true');
     await expect(row.getByTestId('current-streak')).toHaveText(
       'Current streak: 1',
     );
     await done.click();
-    await expect(
-      row.getByRole('button', { name: 'Mark done today' }),
-    ).toHaveAttribute('aria-pressed', 'false');
+    await expect(button(row, 'Mark done today')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await expect(row.getByTestId('current-streak')).toHaveText(
       'Current streak: 0',
     );
@@ -125,11 +132,9 @@ test.describe('habits', () => {
   test('a habit can be renamed', async ({ page }) => {
     await addHabit(page, 'Pushups');
     await openHabit(page, 'Pushups');
-    await page.getByLabel('Habit name').fill('Pullups');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Pullups' }),
-    ).toBeVisible();
+    await field(page, 'Habit name').fill('Pullups');
+    await button(page, 'Rename habit').click();
+    await expect(heading(page, 'Pullups')).toBeVisible();
     await page.goto('/habits');
     await expect(habitRow(page, 'Pullups')).toHaveCount(1);
     await expect(habitRow(page, 'Pushups')).toHaveCount(0);
@@ -138,8 +143,8 @@ test.describe('habits', () => {
   test('deleting a habit needs a confirmation', async ({ page }) => {
     await addHabit(page, 'Guitar');
     await openHabit(page, 'Guitar');
-    await page.getByRole('button', { name: 'Delete habit' }).click();
-    await page.getByRole('button', { name: 'Confirm delete' }).click();
+    await button(page, 'Delete habit').click();
+    await button(page, 'Confirm delete habit').click();
     await expect(page).toHaveURL(AT_HABITS);
     await expect(habitRow(page, 'Guitar')).toHaveCount(0);
   });
@@ -147,6 +152,6 @@ test.describe('habits', () => {
   test('a habit that does not exist is a 404', async ({ page }) => {
     const response = await page.goto('/habits/does-not-exist');
     expect(response?.status()).toBe(404);
-    await expect(page.getByText('Habit not found')).toBeVisible();
+    await expect(message(page, 'Habit not found')).toBeVisible();
   });
 });

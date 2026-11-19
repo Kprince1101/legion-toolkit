@@ -2,8 +2,13 @@ import { expect, test } from '@playwright/test';
 import {
   AT_HABITS,
   AT_LOGIN,
+  button,
+  field,
+  heading,
+  link,
   logIn,
   logOut,
+  message,
   newAccount,
   signUp,
 } from './helpers';
@@ -11,21 +16,15 @@ import {
 test.describe('auth', () => {
   test('the landing page offers sign up and log in', async ({ page }) => {
     await page.goto('/');
-    await expect(
-      page.getByRole('heading', { name: 'Habit tracker' }),
-    ).toBeVisible();
-    const signUpLink = page.getByRole('link', { name: 'Sign up' });
-    await expect(signUpLink).toHaveAttribute('href', '/signup');
-    const logInLink = page.getByRole('link', { name: 'Log in' });
-    await expect(logInLink).toHaveAttribute('href', '/login');
+    await expect(heading(page, 'Habit tracker').first()).toBeVisible();
+    await expect(link(page, 'Sign up')).toHaveAttribute('href', '/signup');
+    await expect(link(page, 'Log in')).toHaveAttribute('href', '/login');
   });
 
   test('signing up lands on the habits page', async ({ page }) => {
     await signUp(page, newAccount());
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Habits' }),
-    ).toBeVisible();
-    await expect(page.getByText('No habits yet')).toBeVisible();
+    await expect(heading(page, 'Habits')).toBeVisible();
+    await expect(message(page, 'No habits yet')).toBeVisible();
   });
 
   test('a second account with the same email is refused', async ({ page }) => {
@@ -33,21 +32,21 @@ test.describe('auth', () => {
     await signUp(page, account);
     await logOut(page);
     await page.goto('/signup');
-    await page.getByLabel('Email').fill(account.email);
-    await page.getByLabel('Password').fill(account.password);
-    await page.getByRole('button', { name: 'Create account' }).click();
+    await field(page, 'Email').fill(account.email);
+    await field(page, 'Password').fill(account.password);
+    await button(page, 'Create account').click();
     await expect(
-      page.getByText('An account with that email already exists'),
+      message(page, 'An account with that email already exists'),
     ).toBeVisible();
   });
 
   test('a short password is refused', async ({ page }) => {
     await page.goto('/signup');
-    await page.getByLabel('Email').fill(newAccount().email);
-    await page.getByLabel('Password').fill('short');
-    await page.getByRole('button', { name: 'Create account' }).click();
+    await field(page, 'Email').fill(newAccount().email);
+    await field(page, 'Password').fill('short');
+    await button(page, 'Create account').click();
     await expect(
-      page.getByText('Password must be at least 8 characters'),
+      message(page, 'Password must be at least 8 characters'),
     ).toBeVisible();
   });
 
@@ -58,7 +57,7 @@ test.describe('auth', () => {
     await signUp(page, account);
     await logOut(page);
     await logIn(page, { ...account, password: 'not-the-password' });
-    await expect(page.getByText('Invalid email or password')).toBeVisible();
+    await expect(message(page, 'Invalid email or password')).toBeVisible();
     await logIn(page, account);
     await expect(page).toHaveURL(AT_HABITS);
   });
@@ -89,11 +88,11 @@ test.describe('auth', () => {
 
   test('the header links to every signed-in page', async ({ page }) => {
     await signUp(page, newAccount());
-    await page.getByRole('link', { name: 'Stats', exact: true }).click();
+    await link(page, 'Stats').click();
     await expect(page).toHaveURL(/\/stats$/);
-    await page.getByRole('link', { name: 'Settings', exact: true }).click();
+    await link(page, 'Settings').click();
     await expect(page).toHaveURL(/\/settings$/);
-    await page.getByRole('link', { name: 'Habits', exact: true }).click();
+    await link(page, 'Habits').click();
     await expect(page).toHaveURL(AT_HABITS);
   });
 });

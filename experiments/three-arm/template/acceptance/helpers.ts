@@ -23,40 +23,55 @@ export const utcDay = (daysAgo: number): string => {
   return date.toISOString().slice(0, 10);
 };
 
+export const button = (scope: Page | Locator, name: string): Locator =>
+  scope.getByRole('button', { name, exact: true });
+
+export const link = (scope: Page | Locator, name: string): Locator =>
+  scope.getByRole('link', { name, exact: true });
+
+export const field = (page: Page, label: string): Locator =>
+  page.getByLabel(label, { exact: true });
+
+export const heading = (page: Page, name: string): Locator =>
+  page.getByRole('heading', { level: 1, name, exact: true });
+
+export const message = (page: Page, text: string): Locator =>
+  page.getByText(text).first();
+
 export const signUp = async (page: Page, account: Account): Promise<void> => {
   await page.goto('/signup');
-  await page.getByLabel('Email').fill(account.email);
-  await page.getByLabel('Password').fill(account.password);
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await field(page, 'Email').fill(account.email);
+  await field(page, 'Password').fill(account.password);
+  await button(page, 'Create account').click();
   await expect(page).toHaveURL(AT_HABITS);
 };
 
 export const logIn = async (page: Page, account: Account): Promise<void> => {
   await page.goto('/login');
-  await page.getByLabel('Email').fill(account.email);
-  await page.getByLabel('Password').fill(account.password);
-  await page.getByRole('button', { name: 'Log in' }).click();
+  await field(page, 'Email').fill(account.email);
+  await field(page, 'Password').fill(account.password);
+  await button(page, 'Log in').click();
 };
 
 export const logOut = async (page: Page): Promise<void> => {
-  await page.getByRole('button', { name: 'Log out' }).click();
+  await button(page, 'Log out').click();
   await expect(page).toHaveURL(/\/$/);
 };
 
 export const addHabit = async (page: Page, name: string): Promise<void> => {
   await page.goto('/habits');
-  await page.getByLabel('Habit name').fill(name);
-  await page.getByRole('button', { name: 'Add habit' }).click();
+  await field(page, 'Habit name').fill(name);
+  await button(page, 'Add habit').click();
   await expect(habitRow(page, name)).toBeVisible();
 };
 
 export const habitRow = (page: Page, name: string): Locator =>
-  page.getByTestId('habit-row').filter({ hasText: name });
+  page.getByTestId('habit-row').filter({ has: link(page, name) });
 
 export const openHabit = async (page: Page, name: string): Promise<void> => {
   await page.goto('/habits');
-  await habitRow(page, name).getByRole('link', { name }).click();
-  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
+  await link(habitRow(page, name), name).click();
+  await expect(heading(page, name)).toBeVisible();
 };
 
 export const historyDay = (page: Page, daysAgo: number): Locator =>
