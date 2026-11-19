@@ -10,7 +10,8 @@ import type { LegionConfig } from 'legion-rules';
 import { renderBlock } from './block.js';
 import { parseSteerArgs } from './cli-args.js';
 import type { SteerArgs } from './cli-args.js';
-import { evaluate, parsePayload, renderFindings } from './hook.js';
+import { getErrorMessage } from './errors.js';
+import { hookResponse } from './respond.js';
 import { registerHooks } from './settings.js';
 import { checkManagedBlock, writeManagedBlock } from './managed.js';
 import { resolveTargets } from './targets.js';
@@ -44,11 +45,6 @@ Options
   --help, -h          this text
 `;
 
-const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) return error.message;
-  return String(error);
-};
-
 const componentCapOf = (config: LegionConfig): number | false => {
   if (config.levels['max-lines'] === undefined) return false;
   return COMPONENT_LINE_CAP;
@@ -72,7 +68,8 @@ const runInit = (args: SteerArgs): number => {
     console.log(`  ${result.outcome.padEnd(9)} ${result.path}`);
   }
   if (args.hooks) {
-    const added = registerHooks(root);
+    const { added, removed } = registerHooks(root);
+    for (const entry of removed) console.log(`  unhook    ${entry}`);
     for (const entry of added) console.log(`  hook      ${entry}`);
   }
   console.log(
@@ -88,21 +85,10 @@ const readStdin = async (): Promise<string> => {
 };
 
 const runHook = async (args: SteerArgs): Promise<number> => {
-  const payload = parsePayload(await readStdin());
-  const verdict = evaluate(resolve(args.root), payload);
-  if (verdict.action === 'allow') {
-    if (!verdict.linted && verdict.reason.startsWith('could not')) {
-      console.error(`legion-steer: ${verdict.reason}`);
-      console.error('The write was allowed because the check could not run.');
-    }
-    return 0;
-  }
-  console.error(`legion-steer: ${verdict.reason}`);
-  console.error(renderFindings(verdict.findings));
-  console.error(
-    'Move the logic into a use<Component> hook or lib/, then write the file again.',
-  );
-  return 2;
+  const response = hookResponse(resolve(args.root), await readStdin());
+  if (response.stdout.length > 0) process.stdout.write(response.stdout);
+  if (response.stderr.length > 0) process.stderr.write(response.stderr);
+  return response.exitCode;
 };
 
 const runCheck = (args: SteerArgs): number => {
