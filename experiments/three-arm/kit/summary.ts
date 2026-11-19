@@ -7,6 +7,7 @@ import type { Outcome } from './transcript.ts';
 
 const OUTCOME_LABEL: Record<Outcome, string> = {
   fixed: 'fixed',
+  kept: 'kept',
   bypassed: 'bypassed',
   'shell-write-unflagged': 'shell write, not flagged',
   'flagged-again': 'flagged again',

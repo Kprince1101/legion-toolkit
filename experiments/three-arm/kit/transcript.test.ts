@@ -177,7 +177,7 @@ describe('analyzeTranscript', () => {
     expect(reports[0]).toMatchObject({
       tool: 'Edit',
       file: 'app/Edit.tsx',
-      outcome: 'abandoned',
+      outcome: 'unknown',
       afterCompaction: true,
     });
   });
@@ -321,7 +321,11 @@ describe('the hook on main', () => {
     call('c7', 'Bash', { command: 'cat > lib/clean.ts <<EOF\nx\nEOF' }),
     result('c7', ''),
   ];
-  const report = analyzeTranscript(mergeEntries([entries()]), [ROOT]);
+  const report = analyzeTranscript(
+    mergeEntries([entries()]),
+    [ROOT],
+    [{ at: '2026-11-18T23:00:00.000Z', errors: {} }],
+  );
 
   it('records a Bash post-hook report with the files from its findings', () => {
     const bash = report.hookEvents.find((event) => event.tool === 'Bash');
@@ -387,6 +391,88 @@ describe('the hook on main', () => {
     expect(
       hookMatch(`${HOOK_PREFIX}app/a.ts gains a lint bypass at line 3`),
     ).toBeNull();
+  });
+});
+
+describe('what happened after a report', () => {
+  const reported = (file: string): string =>
+    [
+      `${HOOK_PREFIX}${violationsWritten(1)}`,
+      `  ${file}:4  a ternary`,
+      'The write already landed. Fix these before moving on.',
+    ].join('\n');
+
+  const edit = (id: string, file: string, newString: string) =>
+    call(id, 'Edit', {
+      file_path: `${ROOT}/${file}`,
+      old_string: 'title',
+      new_string: newString,
+    });
+
+  const session = (): TranscriptEntry[] => [
+    edit('e1', 'app/Report.tsx', 'const label = done ? "Done" : "Todo";'),
+    result('e1', 'The file has been updated'),
+    {
+      type: 'system',
+      uuid: 'report-e1',
+      timestamp: at(),
+      toolUseID: 'e1',
+      content: reported('app/Report.tsx'),
+    },
+    edit('e2', 'app/Report.tsx', 'heading'),
+    result('e2', 'The file has been updated'),
+  ];
+
+  const outcomeWith = (errors: Record<string, number>) => {
+    const entries = session();
+    const early = { at: '2026-11-17T00:00:00.000Z', errors: {} };
+    const afterStep = { at: '2026-11-18T23:00:00.000Z', errors };
+    const report = analyzeTranscript(
+      mergeEntries([entries]),
+      [ROOT],
+      [early, afterStep],
+    );
+    return report.hookEvents.find((event) => event.kind === 'report');
+  };
+
+  it('calls a reported violation kept when an unrelated edit leaves it', () => {
+    expect(outcomeWith({ 'app/Report.tsx': 1 })).toMatchObject({
+      file: 'app/Report.tsx',
+      outcome: 'kept',
+    });
+  });
+
+  it('calls it fixed only when the file is clean at the next checkpoint', () => {
+    expect(outcomeWith({ 'app/Other.tsx': 3 })?.outcome).toBe('fixed');
+  });
+
+  it('leaves it unknown without any lint state', () => {
+    const report = analyzeTranscript(mergeEntries([session()]), [ROOT]);
+    expect(
+      report.hookEvents.find((event) => event.kind === 'report')?.outcome,
+    ).toBe('unknown');
+  });
+
+  it('keeps a hook verdict that lint state cannot overrule', () => {
+    const entries = [
+      ...session(),
+      {
+        type: 'system',
+        uuid: 'report-e2',
+        timestamp: at(),
+        toolUseID: 'e2',
+        content: reported('app/Report.tsx'),
+      },
+    ];
+    const report = analyzeTranscript(
+      mergeEntries([entries]),
+      [ROOT],
+      [{ at: '2026-11-18T23:00:00.000Z', errors: {} }],
+    );
+    expect(report.hookEvents.map((event) => event.outcome)).toEqual([
+      'flagged-again',
+      'fixed',
+    ]);
   });
 });
 

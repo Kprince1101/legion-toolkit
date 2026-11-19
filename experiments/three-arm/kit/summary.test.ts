@@ -56,6 +56,7 @@ const record = (arm: Arm, runId: string, lintErrors: number): RunRecord => ({
     fileWideDirectives: 0,
     directivesByRule: {},
     untested: 0,
+    lintErrorsAsWritten: null,
   },
   auditError: null,
   tsSuppressions: 1,

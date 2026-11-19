@@ -7,6 +7,8 @@ import {
   violationsPending,
   violationsWritten,
 } from '../../../packages/steer/src/reasons.ts';
+import { checkpointAfter, errorsIn } from './lintstate.ts';
+import type { LintCheckpoint } from './lintstate.ts';
 import { shellWriteTargets } from './shell.ts';
 import { toPosix } from './tree.ts';
 
@@ -88,6 +90,7 @@ const SIGNALS: HookSignal[] = [
 
 export type Outcome =
   | 'fixed'
+  | 'kept'
   | 'bypassed'
   | 'shell-write-unflagged'
   | 'flagged-again'
@@ -96,12 +99,15 @@ export type Outcome =
 
 export const OUTCOMES: Outcome[] = [
   'fixed',
+  'kept',
   'bypassed',
   'shell-write-unflagged',
   'flagged-again',
   'abandoned',
   'unknown',
 ];
+
+const DECIDED_BY_THE_HOOK = new Set<Outcome>(['flagged-again', 'bypassed']);
 
 export interface Usage {
   input_tokens?: number;
@@ -383,6 +389,7 @@ const targetsOf = (call: ToolCall, roots: string[]): string[] => {
 
 export const emptyOutcomes = (): Record<Outcome, number> => ({
   fixed: 0,
+  kept: 0,
   bypassed: 0,
   'shell-write-unflagged': 0,
   'flagged-again': 0,
@@ -530,6 +537,10 @@ const judge = (
   return { outcome: 'fixed', nextIndex };
 };
 
+const findingFiles = (findings: HookFinding[], roots: string[]): string[] => [
+  ...new Set(findings.map((finding) => pathKey(roots, finding.file))),
+];
+
 const filesOf = (
   call: ToolCall,
   findings: HookFinding[],
@@ -538,19 +549,36 @@ const filesOf = (
   if (call.input.file_path !== undefined) {
     return [pathKey(roots, call.input.file_path)];
   }
-  return [...new Set(findings.map((finding) => pathKey(roots, finding.file)))];
+  return findingFiles(findings, roots);
 };
 
 const touchesGuardrail = (call: ToolCall, roots: string[]): boolean =>
   !call.failed &&
   targetsOf(call, roots).some((target) => GUARDRAIL_FILE.test(target));
 
+const reportOutcome = (
+  judged: Outcome,
+  files: string[],
+  timestamp: string | null,
+  checkpoints: LintCheckpoint[],
+): Outcome => {
+  if (DECIDED_BY_THE_HOOK.has(judged)) return judged;
+  const checkpoint = checkpointAfter(checkpoints, timestamp);
+  if (checkpoint === null) return 'unknown';
+  if (errorsIn(checkpoint, files) > 0) return 'kept';
+  return 'fixed';
+};
+
 const hookEvent = (
   hook: RawHook,
   scan: Scan,
-  hooked: Set<string>,
-  roots: string[],
+  context: {
+    hooked: Set<string>;
+    roots: string[];
+    checkpoints: LintCheckpoint[];
+  },
 ): HookEvent => {
+  const { hooked, roots, checkpoints } = context;
   const findings = parseFindings(hook.text);
   const afterCompaction = scan.compactionPositions.some(
     (position) => position < hook.position,
@@ -568,12 +596,17 @@ const hookEvent = (
     timestamp: hook.timestamp,
   };
   if (call === undefined) {
+    const files = findingFiles(findings, roots);
+    let outcome: Outcome = 'unknown';
+    if (hook.match.kind === 'report' && files.length > 0) {
+      outcome = reportOutcome('unknown', files, hook.timestamp, checkpoints);
+    }
     return {
       ...base,
       tool: null,
-      file: null,
-      files: [],
-      outcome: 'unknown',
+      file: files[0] ?? null,
+      files,
+      outcome,
       callsUntilNext: null,
       touchedGuardrails: false,
     };
@@ -599,12 +632,16 @@ const hookEvent = (
   const between = scan.calls.slice(callIndex + 1, end);
   let callsUntilNext: number | null = null;
   if (judged.nextIndex !== null) callsUntilNext = judged.nextIndex - callIndex;
+  let outcome = judged.outcome;
+  if (hook.match.kind === 'report') {
+    outcome = reportOutcome(outcome, files, hook.timestamp, checkpoints);
+  }
   return {
     ...base,
     tool: call.name,
     file: files[0] ?? null,
     files,
-    outcome: judged.outcome,
+    outcome,
     callsUntilNext,
     touchedGuardrails: between.some((other) => touchesGuardrail(other, roots)),
   };
@@ -692,6 +729,7 @@ const guardrailEdits = (scan: Scan, roots: string[]): GuardrailEdit[] =>
 export const analyzeTranscript = (
   entries: TranscriptEntry[],
   roots: string[],
+  checkpoints: LintCheckpoint[] = [],
 ): TranscriptReport => {
   const scan = scanEntries(entries);
   const hooks = uniqueHooks(scan.hooks);
@@ -701,7 +739,9 @@ export const analyzeTranscript = (
       return [hook.toolUseId];
     }),
   );
-  const hookEvents = hooks.map((hook) => hookEvent(hook, scan, hooked, roots));
+  const hookEvents = hooks.map((hook) =>
+    hookEvent(hook, scan, { hooked, roots, checkpoints }),
+  );
   return {
     sessions: [...scan.sessions].sort(),
     models: [...scan.models].sort(),

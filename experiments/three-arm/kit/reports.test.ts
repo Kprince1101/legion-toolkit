@@ -126,6 +126,7 @@ describe('summarizeAudit', () => {
       fileWideDirectives: 1,
       directivesByRule: { 'max-lines': 1 },
       untested: 2,
+      lintErrorsAsWritten: null,
     });
   });
 });

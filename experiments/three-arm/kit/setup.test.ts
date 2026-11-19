@@ -229,5 +229,7 @@ describe('steps', () => {
     expect(isResultFile('01-build.json')).toBe(true);
     expect(isResultFile('01-build.audit.json')).toBe(false);
     expect(isResultFile('01-build.stderr.txt')).toBe(false);
+    expect(isResultFile('01-build.audit.as-written.json')).toBe(false);
+    expect(isResultFile('01-build.audit.errors.json')).toBe(false);
   });
 });

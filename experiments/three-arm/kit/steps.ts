@@ -41,4 +41,4 @@ export const claudeArgs = (invocation: ClaudeInvocation): string[] => {
 };
 
 export const isResultFile = (file: string): boolean =>
-  file.endsWith('.json') && !file.endsWith('.audit.json');
+  file.endsWith('.json') && !file.includes('.audit');

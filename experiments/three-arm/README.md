@@ -166,10 +166,19 @@ The prompts never mention rules, lint or the hook.
 - **acceptance**: the kit's pristine copy of the checks, not the agent's,
   run against the agent's app (`next build` then `next start` on port 3199).
   Passed, failed and the names of the failures.
-- **legion-audit JSON** (`audit.json`): every arm scored with the same
-  reference config, `arms/steered/oxlintrc.json`, whatever the agent did to its
-  own. Lint errors and warnings, Legion findings, components over the cap,
-  disable directives (and file-wide ones), untested components and hooks.
+- **legion-audit JSON**: every arm scored with the same reference config,
+  `arms/steered/oxlintrc.json`, whatever the agent did to its own, in two
+  passes over a copy of the workspace. `audit.as-written.json` scores the code
+  as the agent left it, and is where the disable directives (and file-wide
+  ones) are counted. `audit.json` scores the same copy with every
+  `eslint-disable*` and `oxlint-disable*` comment stripped, so a bypass cannot
+  hide what it covers: its lint errors and warnings, Legion findings,
+  components over the cap and untested components and hooks are the numbers
+  the summary reports. `collected.json` also keeps the as-written error count,
+  `lintErrorsAsWritten`, so the gap is what the bypasses were hiding.
+  `audit.errors.json` holds the errors per file from the stripped pass, with
+  the time it was taken. Each step leaves the same three files under
+  `results/`.
 - **bypass directives**: the audit's `eslint-disable` and `oxlint-disable`
   count, plus `@ts-ignore`, `@ts-expect-error` and `@ts-nocheck`.
 - **hook blocks and what happened after each**: from the session transcripts.
@@ -179,14 +188,22 @@ The prompts never mention rules, lint or the hook.
   violations that would land, violations in a file just written, violations in
   files a command wrote, and a lint bypass that blinds the linter, before or
   after the write. A Bash report has no `file_path`, so its files come from
-  the findings it lists. For each event, the next action on any of those files
-  is classified as one of:
+  the findings it lists. For a block, the next action on any of those files is
+  classified as one of:
   - `fixed`: written again, by any tool, and not flagged;
   - `bypassed`: written again with a directive in it;
   - `shell write, not flagged`: written again from Bash, and the hook said
     nothing about it;
   - `flagged again`;
   - `dropped`: never touched again.
+
+  A report is different: its violations have already landed, and the hook
+  only flags violations a write adds, so a reported violation that stays in
+  the file never fires again and hook silence proves nothing. A report is
+  `flagged again` or `bypassed` as above; otherwise it is decided from lint
+  state, at the first checkpoint after it (the end of its step, or the final
+  audit): `fixed` if its files have no errors left there, `kept` if they
+  still do, `unknown` if there is no lint state to read.
 
   Each event also records whether it was a lint or a bypass finding, whether
   the agent touched a guardrail file in between, and whether it happened after

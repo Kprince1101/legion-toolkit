@@ -168,6 +168,7 @@ export interface AuditSummary {
   fileWideDirectives: number;
   directivesByRule: Record<string, number>;
   untested: number;
+  lintErrorsAsWritten: number | null;
 }
 
 interface AuditJson {
@@ -209,5 +210,6 @@ export const summarizeAudit = (text: string): AuditSummary => {
     fileWideDirectives: audit.directives?.fileWide?.length ?? 0,
     directivesByRule: audit.directives?.byRule ?? {},
     untested: audit.testCoverage?.missing?.length ?? 0,
+    lintErrorsAsWritten: null,
   };
 };

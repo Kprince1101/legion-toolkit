@@ -20,11 +20,16 @@ import {
   NOT_RUN,
   parseAcceptance,
   parseStepResult,
-  summarizeAudit,
   totalCost,
 } from './reports.ts';
 import type { AcceptanceSummary } from './reports.ts';
-import { scoreWorkspace, scoringPaths } from './score.ts';
+import type { LintCheckpoint } from './lintstate.ts';
+import {
+  readCheckpoint,
+  readScore,
+  scoreWorkspace,
+  scoringPaths,
+} from './score.ts';
 import { isResultFile } from './steps.ts';
 import {
   agentOf,
@@ -138,21 +143,20 @@ const stepFiles = (runDir: string): string[] => {
   return readdirSync(results).sort();
 };
 
+const stepAudits = (runDir: string): string[] =>
+  stepFiles(runDir).filter((file) => file.endsWith('.audit.json'));
+
 const stepLints = (runDir: string): StepLint[] =>
-  stepFiles(runDir)
-    .filter((file) => file.endsWith('.audit.json'))
-    .map((file) => {
-      const audit = summarizeAudit(
-        readFileSync(join(runDir, 'results', file), 'utf8'),
-      );
-      return {
-        step: file.replace(/\.audit\.json$/, ''),
-        lintErrors: audit.lintErrors,
-        legionFindings: audit.legionFindings,
-        componentCap: audit.componentCap,
-        directives: audit.directives,
-      };
-    });
+  stepAudits(runDir).map((file) => {
+    const audit = readScore(join(runDir, 'results', file));
+    return {
+      step: file.replace(/\.audit\.json$/, ''),
+      lintErrors: audit.lintErrors,
+      legionFindings: audit.legionFindings,
+      componentCap: audit.componentCap,
+      directives: audit.directives,
+    };
+  });
 
 const stepResults = (runDir: string) =>
   stepFiles(runDir)
@@ -164,7 +168,22 @@ const stepResults = (runDir: string) =>
       ),
     );
 
-const transcriptOf = (archive: string, files: string[], roots: string[]) => {
+export const checkpointsOf = (runDir: string): LintCheckpoint[] =>
+  [
+    ...stepAudits(runDir).map((file) => join(runDir, 'results', file)),
+    join(runDir, 'audit.json'),
+  ].flatMap((file) => {
+    const checkpoint = readCheckpoint(file);
+    if (checkpoint === null) return [];
+    return [checkpoint];
+  });
+
+const transcriptOf = (
+  archive: string,
+  files: string[],
+  roots: string[],
+  checkpoints: LintCheckpoint[],
+) => {
   if (files.length === 0) return null;
   const entries = mergeEntries(
     files.map((file) =>
@@ -174,7 +193,7 @@ const transcriptOf = (archive: string, files: string[], roots: string[]) => {
       ),
     ),
   );
-  return analyzeTranscript(entries, roots);
+  return analyzeTranscript(entries, roots, checkpoints);
 };
 
 export const collectRun = (options: CollectOptions): RunRecord => {
@@ -219,6 +238,7 @@ export const collectRun = (options: CollectOptions): RunRecord => {
       join(options.runDir, 'transcripts'),
       transcriptFiles,
       roots,
+      checkpointsOf(options.runDir),
     ),
     transcriptFiles: transcriptFiles.map((file) => `transcripts/${file}`),
     steps,
