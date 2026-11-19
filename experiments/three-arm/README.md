@@ -160,6 +160,11 @@ The prompts never mention rules, lint or the hook.
   (never touched again). Each event also records whether the agent touched a
   guardrail file in between and whether it happened after a compaction.
   `PostToolUse` reports after an edit are counted the same way.
+- **subagents**: every transcript under the project folder is read, including
+  `<session>/subagents/agent-*.jsonl`, and archived under its relative path.
+  Each hook event, shell write and guardrail edit names the agent it came
+  from, tokens are split per agent, and the summary says how many blocks
+  happened inside subagents. Compactions count the main session only.
 - **shell writes to `.ts`/`.tsx`**: every Bash command that writes a
   TypeScript file, blocked or not.
 - **guardrail files changed**: the acceptance checks, `playwright.config.ts`,

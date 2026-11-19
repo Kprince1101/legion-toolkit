@@ -69,6 +69,7 @@ export interface TranscriptEntry {
   sessionId?: string;
   isCompactSummary?: boolean;
   toolUseID?: string;
+  kitAgent?: string;
   message?: {
     id?: string;
     role?: string;
@@ -86,6 +87,7 @@ export interface HookFinding {
 }
 
 export interface HookEvent {
+  agent: string;
   kind: HookKind;
   toolUseId: string | null;
   tool: string | null;
@@ -107,12 +109,14 @@ export interface TokenTotals {
 }
 
 export interface ShellWrite {
+  agent: string;
   command: string;
   targets: string[];
   afterCompaction: boolean;
 }
 
 export interface GuardrailEdit {
+  agent: string;
   tool: string;
   targets: string[];
   afterCompaction: boolean;
@@ -121,9 +125,11 @@ export interface GuardrailEdit {
 export interface TranscriptReport {
   sessions: string[];
   models: string[];
+  agents: string[];
   toolCalls: number;
   compactions: number;
   tokens: TokenTotals;
+  tokensByAgent: Record<string, TokenTotals>;
   hookEvents: HookEvent[];
   blockOutcomes: Record<Outcome, number>;
   reportOutcomes: Record<Outcome, number>;
@@ -132,6 +138,7 @@ export interface TranscriptReport {
 }
 
 interface ToolCall {
+  agent: string;
   id: string;
   name: string;
   input: ToolInput;
@@ -140,6 +147,7 @@ interface ToolCall {
 }
 
 interface RawHook {
+  agent: string;
   kind: HookKind;
   toolUseId: string | null;
   text: string;
@@ -162,6 +170,24 @@ export const parseJsonl = (text: string): TranscriptEntry[] => {
   }
   return entries;
 };
+
+export const MAIN_AGENT = 'main';
+
+const SUBAGENT_FILE = /(?:^|\/)subagents\/[^/]+\.jsonl$/;
+
+export const agentOf = (relativePath: string): string => {
+  const posix = toPosix(relativePath);
+  if (!SUBAGENT_FILE.test(posix)) return MAIN_AGENT;
+  return posix.replace(/\.jsonl$/, '');
+};
+
+export const tagEntries = (
+  entries: TranscriptEntry[],
+  agent: string,
+): TranscriptEntry[] => entries.map((entry) => ({ ...entry, kitAgent: agent }));
+
+const agentFor = (entry: TranscriptEntry): string =>
+  entry.kitAgent ?? MAIN_AGENT;
 
 const byTime = (
   a: { entry: TranscriptEntry; order: number },
@@ -281,21 +307,24 @@ interface Scan {
   calls: ToolCall[];
   hooks: RawHook[];
   compactionPositions: number[];
-  usage: Map<string, Usage>;
+  usage: Map<string, { agent: string; usage: Usage }>;
   models: Set<string>;
   sessions: Set<string>;
+  agents: Set<string>;
 }
 
 const recordAssistant = (scan: Scan, entry: TranscriptEntry, at: number) => {
   const message = entry.message;
+  const agent = agentFor(entry);
   if (message?.id !== undefined && message.usage !== undefined) {
-    scan.usage.set(message.id, message.usage);
+    scan.usage.set(message.id, { agent, usage: message.usage });
   }
   if (message?.model !== undefined) scan.models.add(message.model);
   for (const block of blocksOf(entry)) {
     if (block.type !== 'tool_use') continue;
     if (block.id === undefined || block.name === undefined) continue;
     scan.calls.push({
+      agent,
       id: block.id,
       name: block.name,
       input: block.input ?? {},
@@ -310,12 +339,14 @@ const recordOther = (scan: Scan, entry: TranscriptEntry, at: number) => {
     (block) => block.type === 'tool_result',
   );
   const timestamp = entry.timestamp ?? null;
+  const agent = agentFor(entry);
   for (const result of results) {
     const call = scan.calls.find((known) => known.id === result.tool_use_id);
     const text = stringsIn(result.content).join('\n');
     const kind = hookKind(text);
     if (kind !== null && call !== undefined && WRITE_TOOLS.has(call.name)) {
       scan.hooks.push({
+        agent: call.agent,
         kind,
         toolUseId: call.id,
         text,
@@ -331,9 +362,13 @@ const recordOther = (scan: Scan, entry: TranscriptEntry, at: number) => {
   const text = stringsIn(entry).join('\n');
   const kind = hookKind(text);
   if (kind === null) return;
-  const toolUseId = entry.toolUseID ?? scan.calls.at(-1)?.id ?? null;
-  scan.hooks.push({ kind, toolUseId, text, position: at, timestamp });
+  const lastOwnCall = scan.calls.findLast((known) => known.agent === agent);
+  const toolUseId = entry.toolUseID ?? lastOwnCall?.id ?? null;
+  scan.hooks.push({ agent, kind, toolUseId, text, position: at, timestamp });
 };
+
+const isMainCompaction = (entry: TranscriptEntry): boolean =>
+  isCompaction(entry) && agentFor(entry) === MAIN_AGENT;
 
 const scanEntries = (entries: TranscriptEntry[]): Scan => {
   const scan: Scan = {
@@ -343,10 +378,12 @@ const scanEntries = (entries: TranscriptEntry[]): Scan => {
     usage: new Map(),
     models: new Set(),
     sessions: new Set(),
+    agents: new Set(),
   };
   entries.forEach((entry, at) => {
+    scan.agents.add(agentFor(entry));
     if (entry.sessionId !== undefined) scan.sessions.add(entry.sessionId);
-    if (isCompaction(entry)) scan.compactionPositions.push(at);
+    if (isMainCompaction(entry)) scan.compactionPositions.push(at);
     if (entry.type === 'assistant') recordAssistant(scan, entry, at);
     else recordOther(scan, entry, at);
   });
@@ -365,10 +402,11 @@ const uniqueHooks = (hooks: RawHook[]): RawHook[] => {
 };
 
 const countCompactions = (entries: TranscriptEntry[]): number => {
-  const boundaries = entries.filter(
+  const main = entries.filter((entry) => agentFor(entry) === MAIN_AGENT);
+  const boundaries = main.filter(
     (entry) => entry.type === 'system' && entry.subtype === 'compact_boundary',
   ).length;
-  const summaries = entries.filter(
+  const summaries = main.filter(
     (entry) => entry.isCompactSummary === true,
   ).length;
   return Math.max(boundaries, summaries);
@@ -420,6 +458,7 @@ const hookEvent = (
   const callIndex = scan.calls.findIndex((call) => call.id === hook.toolUseId);
   const call = scan.calls[callIndex];
   const base = {
+    agent: hook.agent,
     kind: hook.kind,
     toolUseId: hook.toolUseId,
     violations: violationsIn(hook.text, findings),
@@ -468,20 +507,34 @@ const tally = (
   return counts;
 };
 
-const sumTokens = (usage: Iterable<Usage>): TokenTotals => {
-  const totals: TokenTotals = {
-    input: 0,
-    output: 0,
-    cacheCreation: 0,
-    cacheRead: 0,
-  };
-  for (const entry of usage) {
-    totals.input += entry.input_tokens ?? 0;
-    totals.output += entry.output_tokens ?? 0;
-    totals.cacheCreation += entry.cache_creation_input_tokens ?? 0;
-    totals.cacheRead += entry.cache_read_input_tokens ?? 0;
-  }
+const zeroTokens = (): TokenTotals => ({
+  input: 0,
+  output: 0,
+  cacheCreation: 0,
+  cacheRead: 0,
+});
+
+const addUsage = (totals: TokenTotals, usage: Usage): void => {
+  totals.input += usage.input_tokens ?? 0;
+  totals.output += usage.output_tokens ?? 0;
+  totals.cacheCreation += usage.cache_creation_input_tokens ?? 0;
+  totals.cacheRead += usage.cache_read_input_tokens ?? 0;
+};
+
+const sumTokens = (scan: Scan): TokenTotals => {
+  const totals = zeroTokens();
+  for (const { usage } of scan.usage.values()) addUsage(totals, usage);
   return totals;
+};
+
+const tokensByAgent = (scan: Scan): Record<string, TokenTotals> => {
+  const byAgent: Record<string, TokenTotals> = {};
+  for (const { agent, usage } of scan.usage.values()) {
+    const totals = byAgent[agent] ?? zeroTokens();
+    addUsage(totals, usage);
+    byAgent[agent] = totals;
+  }
+  return byAgent;
 };
 
 const isAfter = (positions: number[], at: number): boolean =>
@@ -497,6 +550,7 @@ const shellWrites = (scan: Scan, roots: string[]): ShellWrite[] =>
       if (targets.length === 0) return [];
       return [
         {
+          agent: call.agent,
           command: (call.input.command ?? '').slice(0, COMMAND_PREVIEW),
           targets,
           afterCompaction: isAfter(scan.compactionPositions, call.position),
@@ -508,6 +562,7 @@ const guardrailEdits = (scan: Scan, roots: string[]): GuardrailEdit[] =>
   scan.calls
     .filter((call) => touchesGuardrail(call, roots))
     .map((call) => ({
+      agent: call.agent,
       tool: call.name,
       targets: targetsOf(call, roots).filter((target) =>
         GUARDRAIL_FILE.test(target),
@@ -531,9 +586,11 @@ export const analyzeTranscript = (
   return {
     sessions: [...scan.sessions].sort(),
     models: [...scan.models].sort(),
+    agents: [...scan.agents].sort(),
     toolCalls: scan.calls.length,
     compactions: countCompactions(entries),
-    tokens: sumTokens(scan.usage.values()),
+    tokens: sumTokens(scan),
+    tokensByAgent: tokensByAgent(scan),
     hookEvents,
     blockOutcomes: tally(hookEvents, 'block'),
     reportOutcomes: tally(hookEvents, 'report'),

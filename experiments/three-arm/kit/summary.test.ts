@@ -13,7 +13,8 @@ import {
 import { emptyOutcomes } from './transcript.ts';
 import type { HookEvent } from './transcript.ts';
 
-const block = (outcome: HookEvent['outcome']): HookEvent => ({
+const block = (outcome: HookEvent['outcome'], agent = 'main'): HookEvent => ({
+  agent,
   kind: 'block',
   toolUseId: 't',
   tool: 'Write',
@@ -54,6 +55,7 @@ const record = (arm: Arm, runId: string, lintErrors: number): RunRecord => ({
   transcript: {
     sessions: ['s'],
     models: ['m'],
+    agents: ['main'],
     toolCalls: 10,
     compactions: 2,
     tokens: {
@@ -62,11 +64,13 @@ const record = (arm: Arm, runId: string, lintErrors: number): RunRecord => ({
       cacheCreation: 0,
       cacheRead: 2_000_000,
     },
+    tokensByAgent: {},
     hookEvents: [block('fixed'), block('fixed'), block('shell-write')],
     blockOutcomes: { ...emptyOutcomes(), fixed: 2, 'shell-write': 1 },
     reportOutcomes: emptyOutcomes(),
     shellWritesToSource: [
       {
+        agent: 'main',
         command: 'cat > app/x.tsx',
         targets: ['app/x.tsx'],
         afterCompaction: false,
@@ -112,6 +116,18 @@ describe('summary', () => {
       '2 fixed, 1 bypassed',
     );
     expect(outcomeText(emptyOutcomes())).toBe('–');
+  });
+
+  it('says how many blocks happened inside subagents', () => {
+    const base = record('steered', 'steered-2', 0);
+    const withSubagent: RunRecord = {
+      ...base,
+      transcript: {
+        ...(base.transcript as NonNullable<RunRecord['transcript']>),
+        hookEvents: [block('fixed'), block('fixed', 's1/subagents/agent-x')],
+      },
+    };
+    expect(runRow(withSubagent)[8]).toBe('2 (1 in subagents)');
   });
 
   it('renders one row per run', () => {

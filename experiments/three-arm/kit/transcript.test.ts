@@ -1,10 +1,12 @@
 import {
+  agentOf,
   analyzeTranscript,
   hookKind,
   mergeEntries,
   parseFindings,
   parseJsonl,
   pathKey,
+  tagEntries,
 } from './transcript.ts';
 import type { TranscriptEntry } from './transcript.ts';
 
@@ -138,7 +140,12 @@ describe('analyzeTranscript', () => {
       false,
     ]);
     expect(report.guardrailEdits).toEqual([
-      { tool: 'Write', targets: ['.oxlintrc.json'], afterCompaction: false },
+      {
+        agent: 'main',
+        tool: 'Write',
+        targets: ['.oxlintrc.json'],
+        afterCompaction: false,
+      },
     ]);
   });
 
@@ -185,6 +192,71 @@ describe('analyzeTranscript', () => {
     });
     expect(report.models).toEqual(['claude-test']);
     expect(report.sessions).toEqual(['s1']);
+  });
+});
+
+describe('subagents', () => {
+  const main = tagEntries(
+    [
+      {
+        type: 'user',
+        uuid: 'm0',
+        timestamp: at(),
+        message: { content: 'Build it' },
+      },
+      call('p1', 'Task', { description: 'build stats' }),
+      {
+        type: 'system',
+        subtype: 'compact_boundary',
+        uuid: 'mc',
+        timestamp: at(),
+      },
+    ],
+    'main',
+  );
+  const agent = 's1/subagents/agent-x';
+  const sub = tagEntries(
+    [
+      write('q1', 'app/stats/page.tsx'),
+      result('q1', blocked('app/stats/page.tsx'), true),
+      {
+        type: 'system',
+        subtype: 'compact_boundary',
+        uuid: 'sc',
+        timestamp: at(),
+      },
+      call('q2', 'Bash', {
+        command: "cat > app/stats/page.tsx <<'EOF'\nx\nEOF",
+      }),
+      result('q2', ''),
+    ],
+    agent,
+  );
+  const report = analyzeTranscript(mergeEntries([main, sub]), [ROOT]);
+
+  it('tags a block inside a subagent with that agent', () => {
+    expect(report.hookEvents).toHaveLength(1);
+    expect(report.hookEvents[0]).toMatchObject({
+      agent,
+      file: 'app/stats/page.tsx',
+      outcome: 'shell-write',
+    });
+    expect(report.shellWritesToSource[0]?.agent).toBe(agent);
+    expect(report.agents).toEqual(['main', agent]);
+  });
+
+  it('splits tokens by agent and counts only main-session compactions', () => {
+    expect(report.tokensByAgent['main']?.input).toBe(10);
+    expect(report.tokensByAgent[agent]?.input).toBe(20);
+    expect(report.tokens.input).toBe(30);
+    expect(report.compactions).toBe(1);
+  });
+
+  it('names an agent after its transcript path', () => {
+    expect(agentOf('abc.jsonl')).toBe('main');
+    expect(agentOf('abc/subagents/agent-x.jsonl')).toBe(
+      'abc/subagents/agent-x',
+    );
   });
 });
 

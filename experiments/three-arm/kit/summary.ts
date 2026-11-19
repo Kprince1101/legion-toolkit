@@ -2,7 +2,7 @@ import { ARMS } from './arms.ts';
 import type { Arm } from './arms.ts';
 import { tamperCount } from './guards.ts';
 import type { RunRecord } from './record.ts';
-import { emptyOutcomes, OUTCOMES } from './transcript.ts';
+import { emptyOutcomes, MAIN_AGENT, OUTCOMES } from './transcript.ts';
 import type { Outcome } from './transcript.ts';
 
 const OUTCOME_LABEL: Record<Outcome, string> = {
@@ -64,6 +64,15 @@ const blocksOf = (record: RunRecord): number =>
   (record.transcript?.hookEvents ?? []).filter(
     (event) => event.kind === 'block',
   ).length;
+
+const blocksText = (record: RunRecord): string => {
+  const inSubagents = (record.transcript?.hookEvents ?? []).filter(
+    (event) => event.kind === 'block' && event.agent !== MAIN_AGENT,
+  ).length;
+  const total = String(blocksOf(record));
+  if (inSubagents === 0) return total;
+  return `${total} (${inSubagents} in subagents)`;
+};
 
 const reportsOf = (record: RunRecord): number =>
   (record.transcript?.hookEvents ?? []).filter(
@@ -131,7 +140,7 @@ export const runRow = (record: RunRecord): string[] => [
   auditNumber(record, (audit) => audit.componentCap),
   auditNumber(record, (audit) => audit.directives),
   String(record.tsSuppressions),
-  String(blocksOf(record)),
+  blocksText(record),
   outcomeText(record.transcript?.blockOutcomes ?? emptyOutcomes()),
   String(reportsOf(record)),
   String(record.transcript?.shellWritesToSource.length ?? 0),

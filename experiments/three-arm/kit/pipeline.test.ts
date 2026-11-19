@@ -191,4 +191,113 @@ describe('collectRun', () => {
     const summary = renderSummary(loadRecords(runs));
     expect(summary).toContain('| raw | raw-1 | not run |');
   });
+
+  it('reads subagent transcripts and tags their events', () => {
+    const workspace = realpathSync(prose.workspace);
+    const configDir = join(runs, 'claude-config-subagents');
+    const project = join(configDir, 'projects', projectSlug(workspace));
+    const jsonl = (entries: object[]): string =>
+      entries.map((entry) => JSON.stringify(entry)).join('\n');
+    const assistant = (
+      uuid: string,
+      second: number,
+      tool: { id: string; name: string; input: object },
+    ) => ({
+      type: 'assistant',
+      uuid,
+      timestamp: `2026-11-18T00:00:${String(second).padStart(2, '0')}.000Z`,
+      message: {
+        id: `msg-${uuid}`,
+        usage: { input_tokens: 7, output_tokens: 1 },
+        content: [{ type: 'tool_use', ...tool }],
+      },
+    });
+    mkdirSync(join(project, 'sess-1', 'subagents'), { recursive: true });
+    mkdirSync(join(project, 'sess-2', 'subagents'), { recursive: true });
+    writeFileSync(
+      join(project, 'sess-1.jsonl'),
+      jsonl([
+        assistant('main-1', 1, {
+          id: 'task-1',
+          name: 'Task',
+          input: { description: 'build the stats page' },
+        }),
+      ]),
+    );
+    writeFileSync(
+      join(project, 'sess-1', 'subagents', 'agent-x.jsonl'),
+      jsonl([
+        assistant('sub-1', 2, {
+          id: 'w1',
+          name: 'Write',
+          input: {
+            file_path: join(workspace, 'app', 'stats', 'page.tsx'),
+            content: 'x',
+          },
+        }),
+        {
+          type: 'user',
+          uuid: 'sub-1-result',
+          timestamp: '2026-11-18T00:00:03.000Z',
+          message: {
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: 'w1',
+                is_error: true,
+                content:
+                  'legion-steer: 1 violation(s) would land in this file\n  app/stats/page.tsx:4  a ternary',
+              },
+            ],
+          },
+        },
+      ]),
+    );
+    writeFileSync(
+      join(project, 'sess-2', 'subagents', 'agent-x.jsonl'),
+      jsonl([
+        assistant('sub-2', 4, {
+          id: 'b1',
+          name: 'Bash',
+          input: { command: 'cp /tmp/y.tsx app/y.tsx' },
+        }),
+      ]),
+    );
+
+    const record = collectRun({
+      runDir: join(runs, 'prose-1'),
+      kitDir: KIT,
+      repoDir: runs,
+      configDir,
+      acceptance: false,
+      log: quiet,
+    });
+
+    expect(record.transcriptFiles).toEqual([
+      'transcripts/sess-1.jsonl',
+      'transcripts/sess-1/subagents/agent-x.jsonl',
+      'transcripts/sess-2/subagents/agent-x.jsonl',
+    ]);
+    expect(record.transcript?.hookEvents).toHaveLength(1);
+    expect(record.transcript?.hookEvents[0]).toMatchObject({
+      agent: 'sess-1/subagents/agent-x',
+      kind: 'block',
+      file: 'app/stats/page.tsx',
+      outcome: 'abandoned',
+    });
+    expect(record.transcript?.shellWritesToSource).toEqual([
+      {
+        agent: 'sess-2/subagents/agent-x',
+        command: 'cp /tmp/y.tsx app/y.tsx',
+        targets: ['app/y.tsx'],
+        afterCompaction: false,
+      },
+    ]);
+    expect(record.transcript?.tokens.input).toBe(21);
+    expect(Object.keys(record.transcript?.tokensByAgent ?? {})).toEqual([
+      'main',
+      'sess-1/subagents/agent-x',
+      'sess-2/subagents/agent-x',
+    ]);
+  });
 });

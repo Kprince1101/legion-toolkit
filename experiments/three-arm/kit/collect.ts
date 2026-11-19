@@ -8,9 +8,10 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { compareGuards, hashGuards } from './guards.ts';
 import type { GuardHashes } from './guards.ts';
 import { projectSlug } from './isolation.ts';
@@ -25,8 +26,14 @@ import {
 import type { AcceptanceSummary } from './reports.ts';
 import { scoreWorkspace, scoringPaths } from './score.ts';
 import { isResultFile } from './steps.ts';
-import { analyzeTranscript, mergeEntries, parseJsonl } from './transcript.ts';
-import { sourceSizes, tsSuppressionsIn } from './tree.ts';
+import {
+  agentOf,
+  analyzeTranscript,
+  mergeEntries,
+  parseJsonl,
+  tagEntries,
+} from './transcript.ts';
+import { sourceSizes, toPosix, tsSuppressionsIn } from './tree.ts';
 
 export interface CollectOptions {
   runDir: string;
@@ -46,12 +53,15 @@ const MAX_OUTPUT = 256 * 1024 * 1024;
 const readJson = <T>(path: string): T =>
   JSON.parse(readFileSync(path, 'utf8')) as T;
 
-const jsonlIn = (directory: string): string[] => {
+export const jsonlUnder = (directory: string): string[] => {
   if (!existsSync(directory)) return [];
-  return readdirSync(directory)
-    .filter((file) => file.endsWith('.jsonl'))
-    .sort()
-    .map((file) => join(directory, file));
+  return readdirSync(directory, { recursive: true, encoding: 'utf8' })
+    .map(toPosix)
+    .filter(
+      (file) =>
+        file.endsWith('.jsonl') && statSync(join(directory, file)).isFile(),
+    )
+    .sort();
 };
 
 export const gatherTranscripts = (
@@ -64,12 +74,13 @@ export const gatherTranscripts = (
     join(configDir, 'projects', slug),
   );
   for (const source of sources) {
-    for (const file of jsonlIn(source)) {
-      mkdirSync(archive, { recursive: true });
-      copyFileSync(file, join(archive, file.slice(source.length + 1)));
+    for (const file of jsonlUnder(source)) {
+      const target = join(archive, file);
+      mkdirSync(dirname(target), { recursive: true });
+      copyFileSync(join(source, file), target);
     }
   }
-  return jsonlIn(archive);
+  return jsonlUnder(archive);
 };
 
 const runAcceptance = (
@@ -153,10 +164,15 @@ const stepResults = (runDir: string) =>
       ),
     );
 
-const transcriptOf = (files: string[], roots: string[]) => {
+const transcriptOf = (archive: string, files: string[], roots: string[]) => {
   if (files.length === 0) return null;
   const entries = mergeEntries(
-    files.map((file) => parseJsonl(readFileSync(file, 'utf8'))),
+    files.map((file) =>
+      tagEntries(
+        parseJsonl(readFileSync(join(archive, file), 'utf8')),
+        agentOf(file),
+      ),
+    ),
   );
   return analyzeTranscript(entries, roots);
 };
@@ -198,10 +214,12 @@ export const collectRun = (options: CollectOptions): RunRecord => {
       (size) => size.file.endsWith('.tsx') && size.lines > CAP,
     ).length,
     filesOver500: sizes.filter((size) => size.lines > SPRAWL).length,
-    transcript: transcriptOf(transcriptFiles, roots),
-    transcriptFiles: transcriptFiles.map((file) =>
-      file.slice(options.runDir.length + 1),
+    transcript: transcriptOf(
+      join(options.runDir, 'transcripts'),
+      transcriptFiles,
+      roots,
     ),
+    transcriptFiles: transcriptFiles.map((file) => `transcripts/${file}`),
     steps,
     costUsd: totalCost(steps),
     tampered,
