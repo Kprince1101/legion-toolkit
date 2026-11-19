@@ -15,12 +15,12 @@ That one command does two things:
 - **Writes the rules into your agent instruction files**: `AGENTS.md`,
   `.cursor/rules/legion.mdc`, `.github/copilot-instructions.md` and
   `.junie/guidelines.md`, whichever the repo already has (`AGENTS.md` if it
-  has none). The block is generated from the Legion lint preset, never
-  hand-written, so what the agents are told cannot drift from what the linter
-  enforces.
+  has none). The block is generated from a Legion lint preset (`--preset`),
+  never hand-written, so what the agents are told matches what the linter
+  enforces, as long as your lint config uses the same preset.
 - **Registers a Claude Code hook** in `.claude/settings.json`. Before Claude
   writes a TypeScript file, the hook lints the content it is about to write
-  and blocks the write if it would add a lint error. Claude gets the reason
+  and blocks the write if the file would contain a lint error. Claude gets the reason
   and writes it again.
 
 <!-- DEMO GIF PLACEHOLDER: Legion is recording this. Replace this comment and the quote below with the GIF of a blocked write and the rewrite. -->
@@ -57,8 +57,9 @@ Move the logic into a use<Component> hook or lib/, then write the file again.
   write is allowed. It only blocks rules your config turns on, so set up the
   lint below.
 
-Run lint and `npx legion-steer check` in CI to catch what the hook lets
-through. The [legion-steer README](packages/steer) has the options.
+Run lint in CI to catch what the hook lets through, and
+`npx legion-steer check` to fail when the steering block falls out of date.
+The [legion-steer README](packages/steer) has the options.
 
 ## The rules behind it
 
