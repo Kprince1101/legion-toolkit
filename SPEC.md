@@ -349,10 +349,10 @@ on drift. Runs in CI next to `lint`.
 
 A Claude Code hook handler reading the hook JSON on stdin.
 
-| Event         | Matcher       | Behavior                                                                                                                                                                                                                                                                 |
-| ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PreToolUse`  | `Write`       | For `.ts`/`.tsx` targets, runs the rules on `tool_input.content` (temp file, `oxlint --format json`). Any diagnostic at level 2 or above: exit 2, diagnostics on stderr. Exit 2 on `PreToolUse` blocks the write, so the oversized or logic-laden component never lands. |
-| `PostToolUse` | `Edit\|Write` | Lints `tool_input.file_path`. Diagnostics on stderr with exit 2. Not blocking (the edit already happened) but fed straight back to the agent, one edit later instead of one task later.                                                                                  |
+| Event         | Matcher                                      | Behavior                                                                                                                                                                                                                                                                                                                             |
+| ------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PreToolUse`  | `Write\|Edit\|MultiEdit\|NotebookEdit\|Bash` | For TypeScript and JavaScript targets, builds the file as it will be (Write content, or Edit and MultiEdit replayed on disk) and runs the rules on it (scratch file, `oxlint --format json`, nearest config). An error the write introduces: exit 2, diagnostics on stderr, and the write never lands. Bash: records the start time. |
+| `PostToolUse` | `Write\|Edit\|MultiEdit\|Bash`               | Bash: lints every file git sees changed since the command started, exit 2 with diagnostics. File writes: only when the pre-check could not replay the edit.                                                                                                                                                                          |
 
 Diagnostics are phrased as instructions: what to move where, not just
 what is wrong. The rule messages in `legion-rules` follow the same
@@ -360,9 +360,9 @@ convention, since for agents without hooks the message is the only
 steering at fail time.
 
 Limits, stated in the README: hooks are a Claude Code mechanism; other
-agents get the instructions file and their own lint gate. A `PreToolUse`
-hook cannot lint an `Edit` before it lands without reconstructing the
-file, so edits are caught by the `PostToolUse` pass.
+agents get the instructions file and their own lint gate. Bash writes are
+only caught after the fact. Whenever the hook lets a write through
+unchecked it says so; the README lists every path and its status.
 
 ## Package: legion-toolkit (umbrella)
 

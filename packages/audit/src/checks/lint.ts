@@ -27,14 +27,14 @@ interface EslintFileResult {
   messages?: EslintMessage[];
 }
 
-const OXLINT_CONFIGS = [
+export const OXLINT_CONFIGS = [
   '.oxlintrc.json',
   '.oxlintrc.jsonc',
   'oxlint.config.ts',
   'oxlint.config.mts',
 ];
 
-const ESLINT_CONFIGS = [
+export const ESLINT_CONFIGS = [
   'eslint.config.js',
   'eslint.config.mjs',
   'eslint.config.cjs',

@@ -21,33 +21,62 @@ interface Settings {
 }
 
 export const WANTED: Array<[string, string]> = [
-  ['PreToolUse', 'Write'],
-  ['PostToolUse', 'Edit|Write'],
+  ['PreToolUse', 'Write|Edit|MultiEdit|NotebookEdit|Bash'],
+  ['PostToolUse', 'Write|Edit|MultiEdit|Bash'],
 ];
+
+export interface HookChanges {
+  added: string[];
+  removed: string[];
+}
+
+const isOurs = (hook: HookEntry): boolean => hook.command === HOOK_COMMAND;
 
 const hasCommand = (matchers: Matcher[], matcher: string): boolean =>
   matchers.some(
-    (entry) =>
-      entry.matcher === matcher &&
-      (entry.hooks ?? []).some((hook) => hook.command === HOOK_COMMAND),
+    (entry) => entry.matcher === matcher && (entry.hooks ?? []).some(isOurs),
   );
+
+const withoutStale = (
+  event: string,
+  matchers: Matcher[],
+  keep: string,
+): { matchers: Matcher[]; removed: string[] } => {
+  const removed: string[] = [];
+  const kept: Matcher[] = [];
+  for (const entry of matchers) {
+    const hooks = entry.hooks ?? [];
+    if (entry.matcher === keep || !hooks.some(isOurs)) {
+      kept.push(entry);
+      continue;
+    }
+    removed.push(`${event} ${entry.matcher ?? '*'}`);
+    const others = hooks.filter((hook) => !isOurs(hook));
+    if (others.length > 0) kept.push({ ...entry, hooks: others });
+  }
+  return { matchers: kept, removed };
+};
 
 export const mergeSettings = (
   settings: Settings,
-): { settings: Settings; added: string[] } => {
+): { settings: Settings } & HookChanges => {
   const hooks = { ...(settings.hooks ?? {}) };
   const added: string[] = [];
+  const removed: string[] = [];
   for (const [event, matcher] of WANTED) {
-    const existing = [...(hooks[event] ?? [])];
-    if (hasCommand(existing, matcher)) continue;
-    existing.push({
-      matcher,
-      hooks: [{ type: 'command', command: HOOK_COMMAND }],
-    });
+    const pruned = withoutStale(event, hooks[event] ?? [], matcher);
+    removed.push(...pruned.removed);
+    const existing = [...pruned.matchers];
+    if (!hasCommand(existing, matcher)) {
+      existing.push({
+        matcher,
+        hooks: [{ type: 'command', command: HOOK_COMMAND }],
+      });
+      added.push(`${event} ${matcher}`);
+    }
     hooks[event] = existing;
-    added.push(`${event} ${matcher}`);
   }
-  return { settings: { ...settings, hooks }, added };
+  return { settings: { ...settings, hooks }, added, removed };
 };
 
 export const readSettings = (root: string): Settings => {
@@ -62,12 +91,12 @@ export const readSettings = (root: string): Settings => {
   }
 };
 
-export const registerHooks = (root: string): string[] => {
+export const registerHooks = (root: string): HookChanges => {
   const current = readSettings(root);
-  const { settings, added } = mergeSettings(current);
-  if (added.length === 0) return [];
+  const { settings, added, removed } = mergeSettings(current);
+  if (added.length === 0 && removed.length === 0) return { added, removed };
   const path = join(root, SETTINGS_FILE);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(settings, null, 2)}\n`);
-  return added;
+  return { added, removed };
 };
