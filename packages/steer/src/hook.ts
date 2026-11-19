@@ -11,6 +11,13 @@ import type { EditInput } from './edits.js';
 import { lintContent, lintFile, resolveIn } from './lint.js';
 import type { LintOutcome } from './lint.js';
 import { takeMarker, writeMarker } from './markers.js';
+import {
+  BYPASS_PENDING,
+  BYPASS_WRITTEN,
+  violationsCommandWrote,
+  violationsPending,
+  violationsWritten,
+} from './reasons.js';
 import { displayPath } from './text.js';
 
 const LINTABLE = new Set([
@@ -113,7 +120,7 @@ export const verdictFor = (
     return {
       action: 'block',
       findings: fresh,
-      reason: `${fresh.length} violation(s) would land in this file`,
+      reason: violationsPending(fresh.length),
       linted: true,
       notices,
     };
@@ -121,7 +128,7 @@ export const verdictFor = (
   return {
     action: 'report',
     findings: fresh,
-    reason: `${fresh.length} violation(s) in the file just written`,
+    reason: violationsWritten(fresh.length),
     linted: true,
     notices,
   };
@@ -140,7 +147,7 @@ const withBypasses = (
       ...verdict,
       action: 'block',
       findings,
-      reason: 'this write adds a lint bypass that blinds the linter',
+      reason: BYPASS_PENDING,
       notices,
     };
   }
@@ -148,7 +155,7 @@ const withBypasses = (
     ...verdict,
     action: 'report',
     findings,
-    reason: 'the file just written has a lint bypass that blinds the linter',
+    reason: BYPASS_WRITTEN,
     notices,
   };
 };
@@ -296,7 +303,7 @@ const mergeVerdicts = (verdicts: HookVerdict[]): HookVerdict => {
   return {
     action: 'report',
     findings,
-    reason: `${findings.length} violation(s) in files this command wrote`,
+    reason: violationsCommandWrote(findings.length),
     linted,
     notices,
   };

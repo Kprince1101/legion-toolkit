@@ -1,6 +1,7 @@
 import { getErrorMessage } from './errors.js';
 import { evaluate, parsePayload, renderFindings } from './hook.js';
 import type { HookVerdict } from './hook.js';
+import { HOOK_PREFIX } from './reasons.js';
 
 export interface HookResponse {
   exitCode: number;
@@ -32,7 +33,7 @@ const stepAsideOutput = (
 
 export const respond = (event: string, verdict: HookVerdict): HookResponse => {
   const noticeText = verdict.notices
-    .map((notice) => `legion-steer: ${notice}`)
+    .map((notice) => `${HOOK_PREFIX}${notice}`)
     .join('\n');
   if (verdict.action === 'allow') {
     if (verdict.notices.length === 0) return SILENT;
@@ -43,7 +44,7 @@ export const respond = (event: string, verdict: HookVerdict): HookResponse => {
     };
   }
   const lines = [
-    `legion-steer: ${verdict.reason}`,
+    `${HOOK_PREFIX}${verdict.reason}`,
     renderFindings(verdict.findings),
     ADVICE[verdict.action],
     noticeText,

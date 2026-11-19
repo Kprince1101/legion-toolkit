@@ -1,7 +1,7 @@
 export default {
   testEnvironment: 'node',
-  roots: ['<rootDir>/packages'],
-  testMatch: ['**/src/**/*.test.ts'],
+  roots: ['<rootDir>/packages', '<rootDir>/experiments'],
+  testMatch: ['**/src/**/*.test.ts', '**/experiments/*/kit/**/*.test.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   moduleFileExtensions: ['ts', 'js', 'mjs', 'cjs', 'json'],
   moduleNameMapper: {
