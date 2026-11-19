@@ -1,5 +1,18 @@
 # legion-toolkit
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [3606c47]
+  - legion-steer@0.6.0
+  - legion-audit@0.6.0
+  - legion-init@0.6.0
+  - eslint-plugin-legion@0.6.0
+  - legion-prettier-config@0.6.0
+  - legion-rules@0.6.0
+  - legion-tsconfig@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
